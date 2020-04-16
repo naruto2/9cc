@@ -28,14 +28,16 @@ int main(int argc, char **argv) {
   // 抽象構文木を下りながらコード生成
   for (Node *n = node; n; n = n->next) {
     gen(n);
-    printf("  pop rax\n");
+    //printf("  pop rax\n");
   }
   
+#if 0
   // エピローグ
   // 最後の式の結果がRAXに残っているのでそれが返り値になる
   printf("  mov rsp, rbp\n");
   printf("  pop rbp\n");
   printf("  ret\n");
+#endif
   return 0;
 }
 

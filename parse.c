@@ -42,6 +42,14 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
 }
 
 
+static Node *new_node1(NodeKind kind, Token *tok) {
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = kind;
+  node->tok = tok;
+  return node;
+}
+
+
 Node *new_node_num(int val) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_NUM;
@@ -63,13 +71,17 @@ static Node *expr() {
 }
 
 
-Node *stmt() {
+static Node *stmt(void) {
+  if (consume("return")) {
+    Node *node = new_unary(ND_RETURN, expr(),token);
+    expect(";");
+    return node;
+  }
   Node *node = expr();
   expect(";");
   return node;
 }
-
-
+  
 Node *program(void) {
   Node head = {};
   Node *cur = &head;
@@ -166,6 +178,15 @@ Node *mul() {
 }
 
 
+
+static Node *new_unary(NodeKind kind, Node *expr, Token *tok) {
+  Node *node = new_node1(kind, tok);
+  node->lhs = expr;
+  return node;
+}
+
+
+
 Node *unary() {
   if (consume("+"))
     return unary();
@@ -218,6 +239,16 @@ bool startswith(char *p, char *q) {
 }
 
 
+static bool is_alpha(char c) {
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
+}
+
+static bool is_alnum(char c) {
+  return is_alpha(c) || ('0' <= c && c <= '9');
+}
+
+
+
 // 入力文字列pをトークナイズしてそれを返す
 Token *tokenize(char *p) {
   Token head;
@@ -230,6 +261,15 @@ Token *tokenize(char *p) {
       p++;
       continue;
     }
+
+
+    // Keywords
+    if (startswith(p, "return") && !is_alnum(p[6])) {
+      cur = new_token(TK_RESERVED, cur, p, 6);
+      p += 6;
+      continue;
+    }
+
 
     // Multi-letter punctuator
     if (startswith(p, "==") || startswith(p, "!=") ||

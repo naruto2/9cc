@@ -40,6 +40,7 @@ typedef enum {
 	      ND_LE, // <=
 	      ND_ASSIGN, // =
 	      ND_LVAR, // ローカル変数
+	      ND_RETURN, // "return"
 	      ND_NUM,  // 整数
 } NodeKind;
 
@@ -53,6 +54,7 @@ struct Node {
   Node *rhs;     // 右辺
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う
+  Token *tok;
 };
 
 
@@ -66,13 +68,14 @@ Node *primary();
 Node *equality();
 Node *relational();
 Node *add();
-Node *stmt();
+static Node *stmt(void);
 void gen(Node *node);
 Token *tokenize(char *p);
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 bool at_eof();
 Node *program(void);
+static Node *new_unary(NodeKind kind, Node *expr, Token *tok);
 
 
 extern char *user_input;
