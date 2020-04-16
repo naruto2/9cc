@@ -8,8 +8,21 @@ Token *token;
 char *user_input;
 
 
+Node *code[100];
+
+
 // 次のトークンが期待している記号のときには、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
+
+Token *consume_ident(void) {
+  if (token->kind != TK_IDENT)
+    return NULL;
+  Token *t = token;
+  token = token->next;
+  return t;
+}
+
+
 bool consume(char *op) {
   if (token->kind != TK_RESERVED ||
       strlen(op) != token->len ||
@@ -37,8 +50,34 @@ Node *new_node_num(int val) {
 }
 
 
+Node *assign() {
+  Node *node = equality();
+  if (consume("="))
+    node = new_node(ND_ASSIGN, node, assign());
+  return node;
+}
+
+
 Node *expr() {
-  return equality();
+  return assign();
+}
+
+
+Node *stmt() {
+  Node *node = expr();
+  expect(";");
+  return node;
+}
+
+
+void program() {
+  int i = 0;
+  while (!at_eof())
+    code[i++] = stmt();
+  code[i] = NULL;
+
+  fprintf(stderr,"%s\n",code[0]);
+  fprintf(stderr,"%s\n",code[1]);
 }
 
 
@@ -77,6 +116,16 @@ Node *relational() {
 
 
 Node *primary() {
+
+
+  Token *tok = consume_ident();
+  if (tok) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_LVAR;
+    node->offset = (tok->str[0] - 'a' + 1) * 8;
+    return node;
+  }
+
   // 次のトークンが"("なら、"(" expr ")"のはず
   if (consume("(")) {
     Node *node = expr();
@@ -201,6 +250,12 @@ Token *tokenize(char *p) {
       char *q = p;
       cur->val = strtol(p, &p, 10);
       cur->len = p - q;
+      continue;
+    }
+
+    if ('a' <= *p && *p <= 'z') {
+      cur = new_token(TK_IDENT, cur, p++,1);
+      cur->len = 1;
       continue;
     }
 

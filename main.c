@@ -11,8 +11,10 @@ int main(int argc, char **argv) {
   // トークナイズしてパースする
   user_input = argv[1];
   token = tokenize(user_input);
+  //program();
   Node *node = expr();
 
+  
   // アセンブリの前半部分を出力
   printf(".intel_syntax noprefix\n");
   printf(".global main\n");
