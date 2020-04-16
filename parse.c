@@ -58,8 +58,8 @@ Node *assign() {
 }
 
 
-Node *expr() {
-  return assign();
+static Node *expr() {
+  return equality();
 }
 
 
@@ -70,14 +70,15 @@ Node *stmt() {
 }
 
 
-void program() {
-  int i = 0;
-  while (!at_eof())
-    code[i++] = stmt();
-  code[i] = NULL;
+Node *program(void) {
+  Node head = {};
+  Node *cur = &head;
 
-  fprintf(stderr,"%s\n",code[0]);
-  fprintf(stderr,"%s\n",code[1]);
+  while (!at_eof()) {
+    cur->next = stmt();
+    cur = cur->next;
+  }
+  return head.next;
 }
 
 
@@ -116,7 +117,6 @@ Node *relational() {
 
 
 Node *primary() {
-
 
   Token *tok = consume_ident();
   if (tok) {
@@ -245,6 +245,14 @@ Token *tokenize(char *p) {
       continue;
     }
 
+
+    // Single-letter punctuators
+    if (ispunct(*p)) {
+      cur = new_token(TK_RESERVED, cur, p++, 1);
+      continue;
+    }
+
+    
     if (isdigit(*p)) {
       cur = new_token(TK_NUM, cur, p,0);
       char *q = p;
@@ -258,7 +266,7 @@ Token *tokenize(char *p) {
       cur->len = 1;
       continue;
     }
-
+    
     error_at(p,"トークナイズできません");
   }
 

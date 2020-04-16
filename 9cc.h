@@ -11,6 +11,7 @@ typedef enum {
 	      TK_IDENT,    // 識別子
 	      TK_NUM,      // 整数トークン
 	      TK_EOF,      // 入力の終わりを表すトークン
+	      TK_SCOLON,   // セミコロン
 } TokenKind;
 
 typedef struct Token Token;
@@ -47,6 +48,7 @@ typedef struct Node Node;
 // 抽象構文木のノードの型
 struct Node {
   NodeKind kind; // ノードの型
+  Node *next;    // Next node
   Node *lhs;     // 左辺
   Node *rhs;     // 右辺
   int val;       // kindがND_NUMの場合のみ使う
@@ -57,19 +59,21 @@ struct Node {
 
 int expect_number();
 void expect(char *op);
-Node *expr();
+static Node *expr();
 Node *mul();
 Node *unary();
 Node *primary();
 Node *equality();
 Node *relational();
 Node *add();
+Node *stmt();
 void gen(Node *node);
 Token *tokenize(char *p);
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 bool at_eof();
-void program();
+Node *program(void);
+
 
 extern char *user_input;
 extern Token *token;
