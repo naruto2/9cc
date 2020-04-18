@@ -1,5 +1,9 @@
 #include "9cc.h"
 
+// All local variable instances created during parseing are
+// acculated to this list.
+Var *locals;
+
 // 現在着目しているトークン
 Token *token;
 
@@ -33,10 +37,27 @@ bool consume(char *op) {
 }
 
 
+#if 0
 static Node *new_var_node(char name) {
   Node *node = new_node1(ND_VAR,token);
   node->name = name;
   return node;
+}
+#endif 
+static Node *new_var_node(Var *var) {
+  Node *node = new_node1(ND_VAR,token);
+  node->var = var;
+  return node;
+}
+
+
+
+static Var *new_lvar(char *name) {
+  Var *var = calloc(1, sizeof(Var));
+  var->next = locals;
+  var->name = name;
+  locals = var;
+  return var;
 }
 
 
@@ -89,6 +110,25 @@ static Node *stmt(void) {
   return node;
 }
   
+Function *program(void) {
+  locals = NULL;
+
+  Node head = {};
+  Node *cur = &head;
+
+  while (!at_eof()) {
+    cur->next = stmt();
+    cur = cur->next;
+  }
+
+  Function *prog = calloc(1, sizeof(Function));
+  prog->node = head.next;
+  prog->locals = locals;
+  return prog;
+}
+
+
+#if 0
 Node *program(void) {
   Node head = {};
   Node *cur = &head;
@@ -99,7 +139,7 @@ Node *program(void) {
   }
   return head.next;
 }
-
+#endif
 
 // equality = relational ("==" relational | "!=" relational)*
 Node *equality() {
@@ -135,6 +175,15 @@ Node *relational() {
 }
 
 
+// Find a local variable by name.
+static Var *find_var(Token *tok) {
+  for (Var *var = locals; var; var = var->next)
+    if (strlen(var->name) == tok->len && !strncmp(tok->str, var->name, tok->len))
+      return var;
+  return NULL;
+}
+
+
 // primary = "(" expr ")" | ident | num
 static Node *primary() {
 
@@ -147,13 +196,11 @@ static Node *primary() {
 
   Token *tok = consume_ident();
   if (tok) {
-    return new_var_node(*tok->str);
-#if 0
-  Node *node = calloc(1, sizeof(Node));
-  node->kind = ND_LVAR;
-  node->offset = (tok->str[0] - 'a' + 1) * 8;
-  return node;
-#endif
+    //return new_var_node(*tok->str);
+    Var *var = find_var(tok);
+    if (!var)
+      var = new_lvar(strndup(tok->str, tok->len));
+    return new_var_node(var);
   }
   
   // そうでなければ数値のはず
@@ -312,9 +359,11 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    if ('a' <= *p && *p <= 'z') {
-      cur = new_token(TK_IDENT, cur, p++,1);
-      cur->len = 1;
+    if (is_alpha(*p)) {
+      char *q = p++;
+      while (is_alnum(*p))
+	p++;
+      cur = new_token(TK_IDENT, cur, q, p - q);
       continue;
     }
     

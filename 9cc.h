@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -5,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// トークンの種類
+// Token
 typedef enum {
 	      TK_RESERVED, // 記号
 	      TK_IDENT,    // 識別子
@@ -26,9 +27,18 @@ struct Token {
 };
 
 
+// Local variable
+typedef struct Var Var;
+struct Var {
+  Var *next;
+  char *name; // Variable name
+  int offset; // Offset from RBP
+};
 
 
-// 抽象構文木のノードの種類
+
+
+// AST node
 typedef enum {
 	      ND_ADD, // +
 	      ND_SUB, // -
@@ -55,11 +65,20 @@ struct Node {
   Node *lhs;     // 左辺
   Node *rhs;     // 右辺
   char name;     // Used if kind == ND_VAR
+  Var *var;      // Used if kind == ND=VAR
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う
   Token *tok;
 };
 
+
+typedef struct Function Function;
+
+struct Function {
+  Node *node;
+  Var *locals;
+  int stack_size;
+};
 
 
 int expect_number();
@@ -77,11 +96,11 @@ Token *tokenize(char *p);
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 bool at_eof();
-Node *program(void);
+Function *program(void);
 static Node *new_unary(NodeKind kind, Node *expr, Token *tok);
 Token *consume_ident(void);
 static Node *new_node1(NodeKind kind, Token *tok);
-void codegen(Node *node);
+void codegen(Function *prog);
   
 
 extern char *user_input;

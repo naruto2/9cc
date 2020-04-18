@@ -11,29 +11,18 @@ int main(int argc, char **argv) {
   // トークナイズしてパースする
   user_input = argv[1];
   token = tokenize(user_input);
-  Node *node = program();
+  Function *prog = program();
 
-  codegen(node);
-  return 0;
-  
-  // アセンブリの前半部分を出力
-  printf(".intel_syntax noprefix\n");
-  printf(".global main\n");
-  printf("main:\n");
-
-  // プロローグ
-  // 変数26個分の領域を確保する
-  printf("  push rbp\n");
-  printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
-
-
-  // 抽象構文木を下りながらコード生成
-  for (Node *n = node; n; n = n->next) {
-    gen(n);
-    //printf("  pop rax\n");
+  // Assign offsets to local variables.
+  int offset = 0;
+  for (Var *var = prog->locals; var; var = var->next) {
+    offset += 8;
+    var->offset = offset;
   }
-  
+  prog->stack_size = offset;
+
+  codegen(prog);
   return 0;
-}
+}  
+
 
