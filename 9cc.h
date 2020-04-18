@@ -41,6 +41,7 @@ typedef enum {
 	      ND_ASSIGN, // =
 	      ND_LVAR, // ローカル変数
 	      ND_RETURN, // "return"
+	      ND_EXPR_STMT, // 式ステートメント
 	      ND_NUM,  // 整数
 } NodeKind;
 

@@ -77,7 +77,7 @@ static Node *stmt(void) {
     expect(";");
     return node;
   }
-  Node *node = expr();
+  Node *node = new_unary(ND_EXPR_STMT, expr(), token);
   expect(";");
   return node;
 }
