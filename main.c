@@ -12,6 +12,9 @@ int main(int argc, char **argv) {
   user_input = argv[1];
   token = tokenize(user_input);
   Node *node = program();
+
+  codegen(node);
+  return 0;
   
   // アセンブリの前半部分を出力
   printf(".intel_syntax noprefix\n");
@@ -31,13 +34,6 @@ int main(int argc, char **argv) {
     //printf("  pop rax\n");
   }
   
-#if 0
-  // エピローグ
-  // 最後の式の結果がRAXに残っているのでそれが返り値になる
-  printf("  mov rsp, rbp\n");
-  printf("  pop rbp\n");
-  printf("  ret\n");
-#endif
   return 0;
 }
 

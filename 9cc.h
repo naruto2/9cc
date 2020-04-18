@@ -42,6 +42,7 @@ typedef enum {
 	      ND_LVAR, // ローカル変数
 	      ND_RETURN, // "return"
 	      ND_EXPR_STMT, // 式ステートメント
+	      ND_VAR,  // Variable
 	      ND_NUM,  // 整数
 } NodeKind;
 
@@ -53,6 +54,7 @@ struct Node {
   Node *next;    // Next node
   Node *lhs;     // 左辺
   Node *rhs;     // 右辺
+  char name;     // Used if kind == ND_VAR
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う
   Token *tok;
@@ -65,7 +67,7 @@ void expect(char *op);
 static Node *expr();
 Node *mul();
 Node *unary();
-Node *primary();
+static Node *primary();
 Node *equality();
 Node *relational();
 Node *add();
@@ -77,7 +79,10 @@ void error_at(char *loc, char *fmt, ...);
 bool at_eof();
 Node *program(void);
 static Node *new_unary(NodeKind kind, Node *expr, Token *tok);
-
+Token *consume_ident(void);
+static Node *new_node1(NodeKind kind, Token *tok);
+void codegen(Node *node);
+  
 
 extern char *user_input;
 extern Token *token;

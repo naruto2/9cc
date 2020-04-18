@@ -33,6 +33,13 @@ bool consume(char *op) {
 }
 
 
+static Node *new_var_node(char name) {
+  Node *node = new_node1(ND_VAR,token);
+  node->name = name;
+  return node;
+}
+
+
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
@@ -67,7 +74,7 @@ Node *assign() {
 
 
 static Node *expr() {
-  return equality();
+  return assign();
 }
 
 
@@ -128,15 +135,8 @@ Node *relational() {
 }
 
 
-Node *primary() {
-
-  Token *tok = consume_ident();
-  if (tok) {
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_LVAR;
-    node->offset = (tok->str[0] - 'a' + 1) * 8;
-    return node;
-  }
+// primary = "(" expr ")" | ident | num
+static Node *primary() {
 
   // 次のトークンが"("なら、"(" expr ")"のはず
   if (consume("(")) {
@@ -145,6 +145,17 @@ Node *primary() {
     return node;
   }
 
+  Token *tok = consume_ident();
+  if (tok) {
+    return new_var_node(*tok->str);
+#if 0
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = ND_LVAR;
+  node->offset = (tok->str[0] - 'a' + 1) * 8;
+  return node;
+#endif
+  }
+  
   // そうでなければ数値のはず
   return new_node_num(expect_number());
 }
