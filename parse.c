@@ -125,6 +125,7 @@ static Node *expr() {
 //      | "if" "(" expr ")" stmt ("else" stmt)?
 //      | "while" "(" expr ")" stmt
 //      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+//      |  "{" stmt* "}"
 //      | expr ";"
 static Node *stmt(void) {
   if (consume("return")) {
@@ -168,7 +169,19 @@ static Node *stmt(void) {
     node->then = stmt();
     return node;
   }
+  if (consume("{")) {
+    Node head = {};
+    Node *cur = &head;
 
+    while (!consume("}")) {
+      cur->next = stmt();
+      cur = cur->next;
+    }
+
+    Node *node = new_node1(ND_BLOCK,token);
+    node->body = head.next;
+    return node;
+  }
   Node *node = read_expr_stmt();
   expect(";");
   return node;
