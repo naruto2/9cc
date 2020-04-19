@@ -102,7 +102,7 @@ struct Function {
 };
 
 
-int expect_number();
+long expect_number();
 void expect(char *op);
 static Node *expr();
 Node *mul();
@@ -113,18 +113,19 @@ Node *relational();
 Node *add();
 static Node *stmt(void);
 void gen(Node *node);
-Token *tokenize(char *p);
+Token *tokenize(void);
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 bool at_eof();
 Function *program(void);
 static Node *new_unary(NodeKind kind, Node *expr, Token *tok);
+bool consume(char *op);
 Token *consume_ident(void);
 static Node *new_node1(NodeKind kind, Token *tok);
 void codegen(Function *prog);
 static Node *read_expr_stmt(void);
 static bool is_alnum(char c);
-bool startswith(char *p, char *q);
+static bool startswith(char *p, char *q);
   
 
 

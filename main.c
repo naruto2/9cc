@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
 
   // トークナイズしてパースする
   user_input = argv[1];
-  token = tokenize(user_input);
+  token = tokenize();
   Function *prog = program();
 
   // Assign offsets to local variables.
