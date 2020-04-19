@@ -15,6 +15,18 @@ char *user_input;
 Node *code[100];
 
 
+static Function *function(void);
+static Node *stmt(void);
+static Node *expr(void);
+static Node *assign(void);
+static Node *equality(void);
+static Node *relational(void);
+static Node *add(void);
+static Node *mul(void);
+static Node *unary(void);
+static Node *primary(void);
+
+
 static Node *new_var_node(Var *var) {
   Node *node = new_node1(ND_VAR,token);
   node->var = var;
@@ -158,36 +170,46 @@ static Node *stmt(void) {
   return node;
 }
   
-Function *program(void) {
+
+
+
+// function = ident "(" ")" "{" stmt* "}"
+static Function *function(void) {
   locals = NULL;
+
+  char *name = expect_ident();
+  expect("(");
+  expect(")");
+  expect("{");
 
   Node head = {};
   Node *cur = &head;
 
-  while (!at_eof()) {
+  while (!consume("}")) {
     cur->next = stmt();
     cur = cur->next;
   }
 
-  Function *prog = calloc(1, sizeof(Function));
-  prog->node = head.next;
-  prog->locals = locals;
-  return prog;
+  Function *fn = calloc(1, sizeof( Function));
+  fn->name = name;
+  fn->node = head.next;
+  fn->locals = locals;
+  return fn;
 }
+  
 
-
-#if 0
-Node *program(void) {
-  Node head = {};
-  Node *cur = &head;
+// program = function*
+Function *program(void) {
+  Function head = {};
+  Function *cur = &head;
 
   while (!at_eof()) {
-    cur->next = stmt();
+    cur->next = function();
     cur = cur->next;
   }
   return head.next;
 }
-#endif
+
 
 // equality = relational ("==" relational | "!=" relational)*
 Node *equality() {
