@@ -96,7 +96,7 @@ Node *assign() {
 
 static char *starts_with_reserved(char *p) {
   // Keyword
-  static char *kw[] = {"return", "if", "else"};
+  static char *kw[] = {"return", "if", "else", "while"};
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
     int len = strlen(kw[i]);
@@ -138,6 +138,14 @@ static Node *stmt(void) {
     node->then = stmt();
     if (consume("else"))
       node->els = stmt();
+    return node;
+  }
+  if (consume("while")) {
+    Node *node = new_node1(ND_WHILE,token);
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->then = stmt();
     return node;
   }
   Node *node = read_expr_stmt();
