@@ -261,7 +261,8 @@ static Var *find_var(Token *tok) {
 }
 
 
-// primary = "(" expr ")" | ident | num
+// primary = "(" expr ")" | ident args? | num
+// args = "(" ")"
 static Node *primary() {
 
   // 次のトークンが"("なら、"(" expr ")"のはず
@@ -273,7 +274,15 @@ static Node *primary() {
 
   Token *tok = consume_ident();
   if (tok) {
-    //return new_var_node(*tok->str);
+    // Function call
+    if (consume("(")) {
+      expect(")");
+      Node *node = new_node1(ND_FUNCALL,token);
+      node->funcname = strndup(tok->str, tok->len);
+      return node;
+    }
+    
+    // Variable
     Var *var = find_var(tok);
     if (!var)
       var = new_lvar(strndup(tok->str, tok->len));
