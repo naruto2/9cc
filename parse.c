@@ -261,8 +261,22 @@ static Var *find_var(Token *tok) {
 }
 
 
-// primary = "(" expr ")" | ident args? | num
-// args = "(" ")"
+// func-args = "(" (assign ("," assign)*)? ")"
+static Node *func_args(void) {
+  if (consume(")"))
+    return NULL;
+
+  Node *head = assign();
+  Node *cur = head;
+  while (consume(",")) {
+    cur->next = assign();
+    cur = cur->next;
+  }
+  expect(")");
+  return head;
+}
+
+// primary = "(" expr ")" | ident func-args? | num
 static Node *primary() {
 
   // 次のトークンが"("なら、"(" expr ")"のはず
@@ -276,9 +290,9 @@ static Node *primary() {
   if (tok) {
     // Function call
     if (consume("(")) {
-      expect(")");
       Node *node = new_node1(ND_FUNCALL,token);
       node->funcname = strndup(tok->str, tok->len);
+      node->args = func_args();
       return node;
     }
     

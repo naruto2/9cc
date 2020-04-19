@@ -84,7 +84,8 @@ struct Node {
   
   // Function call
   char *funcname;
-
+  Node *args;
+  
   Var *var;      // Used if kind == ND=VAR
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う
