@@ -96,7 +96,7 @@ Node *assign() {
 
 static char *starts_with_reserved(char *p) {
   // Keyword
-  static char *kw[] = {"return", "if", "else", "while"};
+  static char *kw[] = {"return", "if", "else", "while", "for"};
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
     int len = strlen(kw[i]);
@@ -123,6 +123,8 @@ static Node *expr() {
 
 // stmt = "return" expr ";"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
+//      | "while" "(" expr ")" stmt
+//      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //      | expr ";"
 static Node *stmt(void) {
   if (consume("return")) {
@@ -148,6 +150,25 @@ static Node *stmt(void) {
     node->then = stmt();
     return node;
   }
+  if (consume("for")) {
+    Node *node = new_node1(ND_FOR,token);
+    expect("(");
+    if (!consume(";")) {
+      node->init = read_expr_stmt();
+      expect(";");
+    }
+    if (!consume(";")) {
+      node->cond = expr();
+      expect(";");
+    }
+    if (!consume(")")) {
+      node->inc = read_expr_stmt();
+      expect(")");
+    }
+    node->then = stmt();
+    return node;
+  }
+
   Node *node = read_expr_stmt();
   expect(";");
   return node;
