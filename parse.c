@@ -94,18 +94,53 @@ Node *assign() {
 }
 
 
+static char *starts_with_reserved(char *p) {
+  // Keyword
+  static char *kw[] = {"return", "if", "else"};
+
+  for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
+    int len = strlen(kw[i]);
+    if (startswith(p, kw[i]) && !is_alnum(p[len]))
+      return kw[i];
+  }
+
+  // Multi-letter punctuator
+  static char *ops[] = {"==", "!=", "<=", ">="};
+
+  for (int i = 0; i < sizeof(ops) / sizeof(*ops); i++)
+    if (startswith(p, ops[i]))
+      return ops[i];
+
+  return NULL;
+}
+
+
+
 static Node *expr() {
   return assign();
 }
 
 
+// stmt = "return" expr ";"
+//      | "if" "(" expr ")" stmt ("else" stmt)?
+//      | expr ";"
 static Node *stmt(void) {
   if (consume("return")) {
     Node *node = new_unary(ND_RETURN, expr(),token);
     expect(";");
     return node;
   }
-  Node *node = new_unary(ND_EXPR_STMT, expr(), token);
+  if (consume("if")) {
+    Node *node = new_node1(ND_IF,token);
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->then = stmt();
+    if (consume("else"))
+      node->els = stmt();
+    return node;
+  }
+  Node *node = read_expr_stmt();
   expect(";");
   return node;
 }
@@ -245,6 +280,11 @@ static Node *new_unary(NodeKind kind, Node *expr, Token *tok) {
 
 
 
+static Node *read_expr_stmt(void) {
+  return new_unary(ND_EXPR_STMT, expr(), token);
+}
+
+
 Node *unary() {
   if (consume("+"))
     return unary();
@@ -320,20 +360,12 @@ Token *tokenize(char *p) {
       continue;
     }
 
-
-    // Keywords
-    if (startswith(p, "return") && !is_alnum(p[6])) {
-      cur = new_token(TK_RESERVED, cur, p, 6);
-      p += 6;
-      continue;
-    }
-
-
-    // Multi-letter punctuator
-    if (startswith(p, "==") || startswith(p, "!=") ||
-	startswith(p, "<=") || startswith(p, ">=")) {
-      cur = new_token(TK_RESERVED, cur, p, 2);
-      p += 2;
+    // Keywords or multi-letter punctuators
+    char *kw = starts_with_reserved(p);
+    if (kw) {
+      int len = strlen(kw);
+      cur = new_token(TK_RESERVED, cur, p, len);
+      p += len;
       continue;
     }
 

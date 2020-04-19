@@ -51,6 +51,7 @@ typedef enum {
 	      ND_ASSIGN, // =
 	      ND_LVAR, // ローカル変数
 	      ND_RETURN, // "return"
+	      ND_IF,     // "if"
 	      ND_EXPR_STMT, // 式ステートメント
 	      ND_VAR,  // Variable
 	      ND_NUM,  // 整数
@@ -62,9 +63,16 @@ typedef struct Node Node;
 struct Node {
   NodeKind kind; // ノードの型
   Node *next;    // Next node
+
   Node *lhs;     // 左辺
   Node *rhs;     // 右辺
   char name;     // Used if kind == ND_VAR
+
+  // "if" statement
+  Node *cond;
+  Node *then;
+  Node *els;
+
   Var *var;      // Used if kind == ND=VAR
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う
@@ -101,7 +109,13 @@ static Node *new_unary(NodeKind kind, Node *expr, Token *tok);
 Token *consume_ident(void);
 static Node *new_node1(NodeKind kind, Token *tok);
 void codegen(Function *prog);
+static Node *read_expr_stmt(void);
+static bool is_alnum(char c);
+bool startswith(char *p, char *q);
   
+
+
+
 
 extern char *user_input;
 extern Token *token;
