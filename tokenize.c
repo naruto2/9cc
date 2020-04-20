@@ -7,6 +7,10 @@
 char *user_input;
 Token *token;
 
+
+static void verror_at(char *loc, char *fmt, va_list ap);
+
+
 // Reports an error and exit.
 void error(char *fmt, ...) {
   va_list ap;
@@ -15,10 +19,18 @@ void error(char *fmt, ...) {
   fprintf(stderr, "\n");
   exit(1);
 }
+
+
 // Reports an error location and exit.
 void error_at(char *loc, char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
+  verror_at(loc, fmt, ap);
+}
+
+
+// Reports an error location and exit.
+static void verror_at(char *loc, char *fmt, va_list ap) {
   int pos = loc - user_input;
   fprintf(stderr, "%s\n", user_input);
   fprintf(stderr, "%*s", pos, ""); // print pos spaces.
@@ -27,14 +39,27 @@ void error_at(char *loc, char *fmt, ...) {
   fprintf(stderr, "\n");
   exit(1);
 }
+
+
+// Reports an error location and exit.
+void error_tok(Token *tok, char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  verror_at(tok->str, fmt, ap);
+}
+
+
 // Consumes the current token if it matches `op`.
-bool consume(char *op) {
+Token *consume(char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len ||
       strncmp(token->str, op, token->len))
-    return false;
+    return NULL;
+  Token *t = token;
   token = token->next;
-  return true;
+  return t;
 }
+
+
 // Consumes the current token if it is an identifier.
 Token *consume_ident(void) {
   if (token->kind != TK_IDENT)
@@ -43,34 +68,42 @@ Token *consume_ident(void) {
   token = token->next;
   return t;
 }
+
+
 // Ensure that the current token is `op`.
 void expect(char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len ||
       strncmp(token->str, op, token->len))
-    error_at(token->str, "expected \"%s\"", op);
+    error_tok(token, "expected \"%s\"", op);
   token = token->next;
 }
+
+
 // Ensure that the current token is TK_NUM.
 long expect_number(void) {
   if (token->kind != TK_NUM)
-    error_at(token->str, "expected a number");
+    error_tok(token, "expected a number");
   long val = token->val;
   token = token->next;
   return val;
 }
 
+
 // Ensure that the current token is TK_IDENT.
 char *expect_ident(void) {
   if (token->kind != TK_IDENT)
-    error_at(token->str, "expected an identifier");
+    error_tok(token, "expected an identifier");
   char *s = strndup(token->str, token->len);
   token = token->next;
   return s;
 }
 
+
 bool at_eof(void) {
   return token->kind == TK_EOF;
 }
+
+
 // Create a new token and add it as the next token of `cur`.
 static Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   Token *tok = calloc(1, sizeof(Token));
@@ -80,15 +113,23 @@ static Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   cur->next = tok;
   return tok;
 }
+
+
 static bool startswith(char *p, char *q) {
   return strncmp(p, q, strlen(q)) == 0;
 }
+
+
 static bool is_alpha(char c) {
   return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
 }
+
+
 static bool is_alnum(char c) {
   return is_alpha(c) || ('0' <= c && c <= '9');
 }
+
+
 static char *starts_with_reserved(char *p) {
   // Keyword
   static char *kw[] = {"return", "if", "else", "while", "for"};
@@ -104,6 +145,8 @@ static char *starts_with_reserved(char *p) {
       return ops[i];
   return NULL;
 }
+
+
 // Tokenize `user_input` and returns new tokens.
 Token *tokenize(void) {
   char *p = user_input;

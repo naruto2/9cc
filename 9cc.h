@@ -15,6 +15,7 @@ typedef enum {
 	      TK_SCOLON,   // セミコロン
 } TokenKind;
 
+
 typedef struct Token Token;
 
 // トークン型
@@ -65,6 +66,7 @@ typedef enum {
 	      ND_NUM,  // 整数
 } NodeKind;
 
+
 typedef struct Node Node;
 
 // 抽象構文木のノードの型
@@ -93,7 +95,7 @@ struct Node {
   Var *var;      // Used if kind == ND=VAR
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う
-  Token *tok;
+  Token *tok;    // Representative token
 };
 
 
@@ -108,35 +110,19 @@ struct Function {
 };
 
 
-long expect_number();
-void expect(char *op);
-
-
-
-static Node *primary();
-
-
-
-
-void gen(Node *node);
+Function *program(void);
+Token *consume(char *op);
+Token *consume_ident(void);
 Token *tokenize(void);
+char *expect_ident(void);
+long expect_number(void);
+bool at_eof(void);
+void codegen(Function *prog);
+void error_tok(Token *tok, char *fmt, ...);
+void expect(char *op);
+void gen(Node *node);
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
-char *expect_ident(void);
-bool at_eof();
-Function *program(void);
-bool consume(char *op);
-Token *consume_ident(void);
-void codegen(Function *prog);
-static bool is_alnum(char c);
-static bool startswith(char *p, char *q);
-
-static Node *new_unary(NodeKind kind, Node *expr, Token *tok);
-static Node *new_node1(NodeKind kind, Token *tok);
-static Node *read_expr_stmt(void);
-
-
-
 
 
 extern char *user_input;
