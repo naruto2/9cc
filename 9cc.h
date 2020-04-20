@@ -36,6 +36,7 @@ typedef struct Var Var;
 struct Var {
   char *name; // Variable name
   int offset; // Offset from RBP
+  Type *ty;   // Type
 };
 
 
@@ -72,6 +73,7 @@ typedef enum {
 	      ND_EXPR_STMT, // 式ステートメント
 	      ND_VAR,  // Variable
 	      ND_NUM,  // 整数
+	      ND_NULL, // Empty statement
 } NodeKind;
 
 
@@ -140,6 +142,7 @@ Function *program(void);
 Token *consume(char *op);
 Token *consume_ident(void);
 Token *tokenize(void);
+Token *peek(char *s);
 char *expect_ident(void);
 long expect_number(void);
 bool at_eof(void);
@@ -148,8 +151,12 @@ void error_tok(Token *tok, char *fmt, ...);
 void expect(char *op);
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
+bool is_integer(Type *ty);
+Type *pointer_to(Type *base);
+void add_type(Node *node);
 
 
 extern char *user_input;
 extern Token *token;
 extern Node *code[100];
+extern Type *int_type;
