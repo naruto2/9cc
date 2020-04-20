@@ -54,6 +54,8 @@ typedef enum {
 	      ND_LT, // <
 	      ND_LE, // <=
 	      ND_ASSIGN, // =
+	      ND_ADDR,   // unary &
+	      ND_DEREF,  // unary *
 	      ND_LVAR, // ローカル変数
 	      ND_RETURN, // "return"
 	      ND_IF,     // "if"
@@ -120,7 +122,6 @@ bool at_eof(void);
 void codegen(Function *prog);
 void error_tok(Token *tok, char *fmt, ...);
 void expect(char *op);
-void gen(Node *node);
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 
