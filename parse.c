@@ -2,7 +2,7 @@
 
 // All local variable instances created during parseing are
 // acculated to this list.
-Var *locals;
+static VarList *locals;
 
 // 現在着目しているトークン
 Token *token;
@@ -37,9 +37,12 @@ static Node *new_var_node(Var *var) {
 
 static Var *new_lvar(char *name) {
   Var *var = calloc(1, sizeof(Var));
-  var->next = locals;
   var->name = name;
-  locals = var;
+
+  VarList *vl = calloc(1, sizeof(VarList));
+  vl->var = var;
+  vl->next = locals;
+  locals = vl;
   return var;
 }
 
@@ -172,14 +175,36 @@ static Node *stmt(void) {
   
 
 
+static VarList *read_func_params(void) {
+  if (consume(")"))
+    return NULL;
 
-// function = ident "(" ")" "{" stmt* "}"
+  VarList *head = calloc(1, sizeof(VarList));
+  head->var = new_lvar(expect_ident());
+  VarList *cur = head;
+
+  while (!consume(")")) {
+    expect(",");
+    cur->next = calloc(1, sizeof(VarList));
+    cur->next->var = new_lvar(expect_ident());
+    cur = cur->next;
+  }
+
+  return head;
+}
+
+
+// function = ident "(" params? ")" "{" stmt* "}"
+// params   = ident ("," ident)*
 static Function *function(void) {
   locals = NULL;
 
-  char *name = expect_ident();
+//char *name = expect_ident();
+  Function *fn = calloc(1, sizeof(Function));
+  fn->name = expect_ident();
   expect("(");
-  expect(")");
+//expect(")");
+  fn->params = read_func_params();
   expect("{");
 
   Node head = {};
@@ -190,8 +215,8 @@ static Function *function(void) {
     cur = cur->next;
   }
 
-  Function *fn = calloc(1, sizeof( Function));
-  fn->name = name;
+//Function *fn = calloc(1, sizeof( Function));
+//fn->name = name;
   fn->node = head.next;
   fn->locals = locals;
   return fn;
@@ -247,9 +272,16 @@ Node *relational() {
 
 // Find a local variable by name.
 static Var *find_var(Token *tok) {
+#if 0
   for (Var *var = locals; var; var = var->next)
     if (strlen(var->name) == tok->len && !strncmp(tok->str, var->name, tok->len))
       return var;
+#endif 
+  for (VarList *vl = locals; vl; vl = vl->next) {
+    Var *var = vl->var;
+    if (strlen(var->name) == tok->len && !strncmp(tok->str, var->name, tok->len))
+      return var;
+  }
   return NULL;
 }
 
