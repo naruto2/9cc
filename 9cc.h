@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+typedef struct Type Type;
+
 // Token
 typedef enum {
 	      TK_RESERVED, // 記号
@@ -46,7 +49,10 @@ struct VarList {
 // AST node
 typedef enum {
 	      ND_ADD, // +
+	      ND_PTR_ADD, // ptr + num or num + ptr
 	      ND_SUB, // -
+	      ND_PTR_SUB, // ptr - num
+	      ND_PTR_DIFF,// ptr - ptr
 	      ND_MUL, // *
 	      ND_DIV, // /
 	      ND_EQ, // ==
@@ -97,6 +103,7 @@ struct Node {
   Var *var;      // Used if kind == ND=VAR
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う
+  Type *ty;      // Type, e.g. int or pointer to int
   Token *tok;    // Representative token
 };
 
@@ -110,6 +117,23 @@ struct Function {
   VarList *locals;
   int stack_size;
 };
+
+
+//
+// typing.c
+//
+
+typedef enum { TY_INT, TY_PTR } TypeKind;
+
+struct Type {
+  TypeKind kind;
+  Type *base;
+};
+
+bool is_integer(Type *ty);
+void add_type(Node *node);
+
+
 
 
 Function *program(void);
