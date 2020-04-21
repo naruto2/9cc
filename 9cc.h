@@ -32,12 +32,15 @@ struct Token {
 };
 
 
-// Local variable
+// Variable
 typedef struct Var Var;
 struct Var {
-  char *name; // Variable name
-  int offset; // Offset from RBP
-  Type *ty;   // Type
+  char *name;    // Variable name
+  Type *ty;      // Type
+  bool is_local; // local or global
+
+  // Local variable
+  int offset;    // Offset from RBP
 };
 
 
@@ -136,7 +139,13 @@ struct Type {
 };
 
 
-Function *program(void);
+typedef struct {
+  VarList *globals;
+  Function *fns;
+} Program;
+
+
+Program *program(void);
 Token *consume(char *op);
 Token *consume_ident(void);
 Token *tokenize(void);
@@ -146,7 +155,7 @@ long expect_number(void);
 bool is_integer(Type *ty);
 bool at_eof(void);
 void add_type(Node *node);
-void codegen(Function *prog);
+void codegen(Program *prog);
 void error_tok(Token *tok, char *fmt, ...);
 void expect(char *op);
 void error(char *fmt, ...);
