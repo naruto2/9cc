@@ -129,7 +129,12 @@ struct Function {
 // typing.c
 //
 
-typedef enum { TY_INT, TY_PTR, TY_ARRAY } TypeKind;
+typedef enum {
+	      TY_CHAR,
+	      TY_INT,
+	      TY_PTR,
+	      TY_ARRAY
+} TypeKind;
 
 struct Type {
   TypeKind kind;
@@ -168,3 +173,4 @@ extern char *user_input;
 extern Token *token;
 extern Node *code[100];
 extern Type *int_type;
+extern Type *char_type;
