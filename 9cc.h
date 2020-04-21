@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include <assert.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -125,17 +126,14 @@ struct Function {
 // typing.c
 //
 
-typedef enum { TY_INT, TY_PTR } TypeKind;
+typedef enum { TY_INT, TY_PTR, TY_ARRAY } TypeKind;
 
 struct Type {
   TypeKind kind;
+  int size;    // sizeof() value
   Type *base;
+  int array_len;
 };
-
-bool is_integer(Type *ty);
-void add_type(Node *node);
-
-
 
 
 Function *program(void);
@@ -145,15 +143,16 @@ Token *tokenize(void);
 Token *peek(char *s);
 char *expect_ident(void);
 long expect_number(void);
+bool is_integer(Type *ty);
 bool at_eof(void);
+void add_type(Node *node);
 void codegen(Function *prog);
 void error_tok(Token *tok, char *fmt, ...);
 void expect(char *op);
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
-bool is_integer(Type *ty);
 Type *pointer_to(Type *base);
-void add_type(Node *node);
+Type *array_of(Type *base, int size);
 
 
 extern char *user_input;
