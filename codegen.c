@@ -31,13 +31,6 @@ static void gen_addr(Node *node) {
 }
 
 
-static void gen_lval(Node *node) {
-  if (node->ty->kind == TY_ARRAY)
-    error_tok(node->tok, "not an lvalue");
-  gen_addr(node);
-}
-
-
 static void load(void) {
   printf("  pop rax\n");
   printf("  mov rax, [rax]\n");
