@@ -27,6 +27,8 @@ static void gen_addr(Node *node) {
   case ND_DEREF:
     gen(node->lhs);
     return;
+  default:
+    break;
   }
 
   error_tok(node->tok, "not an lvalue");
@@ -146,7 +148,6 @@ static void gen(Node *node) {
       gen(arg);
       nargs++;
     }
-    
     for (int i = nargs - 1; i >= 0; i--)
       printf("  pop %s\n", argreg8[i]);
     
@@ -174,6 +175,8 @@ static void gen(Node *node) {
     printf("  pop rax\n");
     printf("  jmp .L.return.%s\n", funcname);
     return;
+  default:
+    break;
   }
   
   gen(node->lhs);
@@ -229,6 +232,8 @@ static void gen(Node *node) {
     printf("  cmp rax, rdi\n");
     printf("  setle al\n");
     printf("  movzb rax, al\n");
+    break;
+  default:
     break;
   }
 

@@ -76,5 +76,7 @@ void add_type(Node *node) {
       error_tok(node->tok, "invalid pointer dereference");
     node->ty = node->lhs->ty->base;
     return;
+  default:
+    break;
   }
 }
