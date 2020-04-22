@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -183,3 +184,4 @@ extern Token *token;
 extern Node *code[100];
 extern Type *int_type;
 extern Type *char_type;
+extern char *filename;
