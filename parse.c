@@ -32,6 +32,7 @@ static Node *unary(void);
 static Node *new_unary(NodeKind kind, Node *expr, Token *tok);
 static Node *read_expr_stmt(void);
 static Node *declaration(void);
+static Node *stmt_expr(Token *tok);
 static Type *basetype(void);
 static void global_var(void);
 
@@ -335,12 +336,19 @@ static Node *func_args(void) {
 }
 
 
-// primary = "(" expr ")" | "sizeof" unary | ident func-args? | str | num
-// args = "(" ident ("," ident)* ")"
+// primary = "(" "{" stmt-expr-tail
+//         | "(" expr ")"
+//         | "sizeof" unary
+//         | ident func-args?
+//         | str
+//         | num
 static Node *primary(void) {
   Token *tok;
   
-  if (consume("(")) {
+  if ((tok = consume("("))) {
+    if (consume("{"))
+      return stmt_expr(tok);
+
     Node *node = expr();
     expect(")");
     return node;
@@ -474,6 +482,27 @@ static Node *postfix(void) {
     expect("]");
     node = new_unary(ND_DEREF, exp, tok);
   }
+  return node;
+}
+
+
+// stmt-expr = "(" "{" stmt stmt* "}" ")"
+//
+// Statement expression is a GNU C extension.
+static Node *stmt_expr(Token *tok) {
+  Node *node = new_node(ND_STMT_EXPR, tok);
+  node->body = stmt();
+  Node *cur = node->body;
+
+  while (!consume("}")) {
+    cur->next = stmt();
+    cur = cur->next;
+  }
+  expect(")");
+
+  if (cur->kind != ND_EXPR_STMT)
+    error_tok(cur->tok, "stmt expr returning void is not supported");
+  memcpy(cur, cur->lhs, sizeof(Node));
   return node;
 }
 
