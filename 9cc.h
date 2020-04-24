@@ -156,6 +156,7 @@ typedef enum {
 struct Type {
   TypeKind kind;
   int size;        // sizeof() value
+  int align;       // alignment
   Type *base;      // pointer or array
   int array_len;   // array
   Member *members; // struct
@@ -194,6 +195,7 @@ void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 Type *pointer_to(Type *base);
 Type *array_of(Type *base, int size);
+int align_to(int n, int align);
 
 
 extern char *user_input;
