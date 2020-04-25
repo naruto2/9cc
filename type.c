@@ -47,6 +47,11 @@ Type *func_type(Type *return_ty) {
 }
 
 
+Type *enum_type(void) {
+  return new_type(TY_ENUM, 4, 4);
+}
+
+
 void add_type(Node *node) {
   if (!node || node->ty)
     return;
