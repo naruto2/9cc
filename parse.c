@@ -71,7 +71,8 @@ static void global_var(void);
 static VarScope *push_scope(char *name);
 static Type *declarator(Type *ty, char **name);
 static Type *type_suffix(Type *ty);
-
+static Type *abstract_declarator(Type *ty);
+static Type *type_name(void);
 
 
 // All local variable instances created during parseing are
@@ -448,6 +449,7 @@ static Node *func_args(void) {
 
 // primary = "(" "{" stmt-expr-tail
 //         | "(" expr ")"
+//         | "sizeof" "(" type-name ")"
 //         | "sizeof" unary
 //         | ident func-args?
 //         | str
@@ -465,6 +467,14 @@ static Node *primary(void) {
   }
 
   if ((tok = consume("sizeof"))) {
+    if (consume("(")) {
+      if (is_typename()) {
+	Type *ty = type_name();
+	expect(")");
+	return new_num(ty->size, tok);
+      }
+      token = tok->next;
+    }
     Node *node = unary();
     add_type(node);
     return new_num(node->ty->size, tok);
@@ -976,4 +986,27 @@ static VarScope *push_scope(char *name) {
   sc->next = var_scope;
   var_scope = sc;
   return sc;
+}
+
+
+static Type *abstract_declarator(Type *ty) {
+  while (consume("*"))
+    ty = pointer_to(ty);
+
+  if (consume("(")) {
+    Type *placeholder = calloc(1, sizeof(Type));
+    Type *new_ty = abstract_declarator(placeholder);
+    expect(")");
+    memcpy(placeholder, type_suffix(ty), sizeof(Type));
+    return new_ty;
+  }
+  return type_suffix(ty);
+}
+
+
+// type-name = basetype abstract-declarator type-suffix
+static Type *type_name(void) {
+  Type *ty = basetype(NULL);
+  ty = abstract_declarator(ty);
+  return type_suffix(ty);
 }
