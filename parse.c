@@ -1,6 +1,16 @@
 #include "9cc.h"
 
 
+// Scope for local variables, global variables or typedefs
+typedef struct VarScope VarScope;
+struct VarScope {
+  VarScope *next;
+  char *name;
+  Var *var;
+  Type *type_def;
+};
+
+
 // Scope for struct tags
 typedef struct TagScope TagScope;
 struct TagScope {
@@ -10,9 +20,56 @@ struct TagScope {
 };
 
 typedef struct {
-  VarList *var_scope;
+  VarScope *var_scope;
   TagScope *tag_scope;
 } Scope;
+
+
+static Scope *enter_scope(void);
+static void leave_scope(Scope *sc);
+static TagScope *find_tag(Token *tok);
+static void push_tag_scope(Token *tok, Type *ty);
+static Type *find_typedef(Token *tok);
+static Node *new_num(long val, Token *tok);
+static Node *new_var_node(Var *var, Token *tok);
+static Var *new_var(char *name, Type *ty, bool is_local);
+static Var *new_lvar(char *name, Type *ty);
+static Var *new_gvar(char *name, Type *ty);
+static char *new_label(void);
+static Node *new_node(NodeKind kind, Token *tok);
+static Node *new_binary(NodeKind kind, Node *lhs, Node *rhs, Token *tok);
+static Node *assign(void);
+static Node *expr(void);
+static bool is_typename(void);
+static Node *stmt(void);
+static Node *stmt2(void);
+static Type *read_type_suffix(Type *base);
+static VarList *read_func_param(void);
+static VarList *read_func_params(void);
+static Function *function(void);
+static Node *equality(void);
+static Node *relational(void);
+static VarScope *find_var(Token *tok);
+static Node *func_args(void);
+static Node *primary(void);
+static Node *new_add(Node *lhs, Node *rhs, Token *tok);
+static Node *new_sub(Node *lhs, Node *rhs, Token *tok);
+static Node *add(void);
+static Node *mul(void);
+static Node *unary(void);
+static Member *find_member(Type *ty, char *name);
+static Node *struct_ref(Node *lhs);
+static Node *postfix(void);
+static Node *stmt_expr(Token *tok);
+static Node *new_unary(NodeKind kind, Node *expr, Token *tok);
+static Node *read_expr_stmt(void);
+static Type *basetype(void);
+static Type *struct_decl(void);
+static Member *struct_member(void);
+static Node *declaration(void);
+static bool is_function(void);
+static void global_var(void);
+static VarScope *push_scope(char *name);
 
 
 // All local variable instances created during parseing are
@@ -21,9 +78,9 @@ static VarList *locals;
 static VarList *globals;
 
 
-// C has two block scopes; one is for variables and the other is
-// for struct tags.
-VarList *var_scope;
+// C has two block scopes; one is for variables/typedefs and
+// the other is for struct tags.
+static VarScope *var_scope;
 static TagScope *tag_scope;
 
 // Begin a block scope
@@ -58,36 +115,15 @@ static void push_tag_scope(Token *tok, Type *ty) {
 }
 
 
-static Node *new_num(long val, Token *tok);
-static Node *new_var_node(Var *var, Token *tok);
-static Var *new_lvar(char *name, Type *ty);
-static Node *new_node(NodeKind kind, Token *tok);
-static Node *new_binary(NodeKind kind, Node *lhs, Node *rhs, Token *tok);
-static Node *assign(void);
-static Node *expr(void);
-static Node *stmt(void);
-static Node *stmt2(void);
-static VarList *read_func_params(void);
-static Function *function(void);
-static Node *equality(void);
-static Node *relational(void);
-static Var *find_var(Token *tok);
-static Node *func_args(void);
-static Node *postfix(void);
-static Node *primary(void);
-static Node *add(void);
-static Node *mul(void);
-static Node *unary(void);
-static Node *new_unary(NodeKind kind, Node *expr, Token *tok);
-static Node *read_expr_stmt(void);
-static Node *declaration(void);
-static Node *stmt_expr(Token *tok);
-static Type *basetype(void);
-static void global_var(void);
-static Type *struct_decl(void);
-static Member *struct_member(void);
-static bool is_typename(void);
 
+static Type *find_typedef(Token *tok) {
+  if (tok->kind == TK_IDENT) {
+    VarScope *sc = find_var(tok);
+    if (sc)
+      return sc->type_def;
+  }
+  return NULL;
+}
 
 
 static Node *new_num(long val, Token *tok) {
@@ -110,17 +146,14 @@ static Var *new_var(char *name, Type *ty, bool is_local) {
   var->ty = ty;
   var->is_local = is_local;
 
-  VarList *sc = calloc(1, sizeof(VarList));
-  sc->var = var;
-  sc->next = var_scope;
-  var_scope = sc;
   return var;
 }
 
 
 static Var *new_lvar(char *name, Type *ty) {
   Var *var = new_var(name, ty, true);
-
+  push_scope(name)->var = var;
+  
   VarList *vl = calloc(1, sizeof(VarList));
   vl->var = var;
   vl->next = locals;
@@ -131,7 +164,8 @@ static Var *new_lvar(char *name, Type *ty) {
 
 static Var *new_gvar(char *name, Type *ty) {
   Var *var = new_var(name, ty, false);
-
+  push_scope(name)->var = var;
+  
   VarList *vl = calloc(1, sizeof(VarList));
   vl->var = var;
   vl->next = globals;
@@ -181,7 +215,7 @@ static Node *expr(void) {
 
 // Returns true if the next token represents a type.
 static bool is_typename(void) {
-  return peek("char") || peek("int") || peek("struct");
+  return peek("char") || peek("int") || peek("struct") || find_typedef(token);
 }
 
 
@@ -197,6 +231,7 @@ static Node *stmt(void) {
 //       | "while" "(" expr ")" stmt
 //       | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //       | "{" stmt* "}"
+//       | "typedef" basetype ident ("[" num "]")* ";"
 //       | declaration
 //       | expr ";"
 static Node *stmt2(void) {
@@ -256,6 +291,15 @@ static Node *stmt2(void) {
     Node *node = new_node(ND_BLOCK, tok);
     node->body = head.next;
     return node;
+  }
+
+  if ((tok = consume("typedef"))) {
+    Type *ty = basetype();
+    char *name = expect_ident();
+    ty = read_type_suffix(ty);
+    expect(";");
+    push_scope(name)->type_def = ty;
+    return new_node(ND_NULL, tok);
   }
 
   if (is_typename())
@@ -370,14 +414,11 @@ static Node *relational(void) {
 }
 
 
-// Find a variable by name.
-static Var *find_var(Token *tok) {
-
-  for (VarList *vl = var_scope; vl; vl = vl->next) {
-    Var *var = vl->var;
-    if (strlen(var->name) == tok->len && !strncmp(tok->str, var->name, tok->len))
-      return var;
-  }
+// Find a variable or a typedef by name.
+static VarScope *find_var(Token *tok) {
+  for (VarScope *sc = var_scope; sc; sc = sc->next)
+    if (strlen(sc->name) == tok->len && !strncmp(tok->str, sc->name, tok->len))
+      return sc;
   return NULL;
 }
 
@@ -432,13 +473,13 @@ static Node *primary(void) {
 	return node;
       }
       // Variable
-      Var *var = find_var(tok);
-      if (!var)
-	error_tok(tok, "undefined variable");
-      return new_var_node(var, tok);
-    }
+      VarScope *sc = find_var(tok);
+      if (sc && sc->var)
+	return new_var_node(sc->var, tok);
+      error_tok(tok, "undefined variable");
+  }
 
-    tok = token;
+  tok = token;
     if (tok->kind == TK_STR) {
       token = token->next;
 
@@ -635,9 +676,12 @@ static Type *basetype(void) {
     ty = char_type;
   else if ((consume("int")))
     ty = int_type;
-  else
+  else if (consume("struct"))
     ty = struct_decl();
-    
+  else
+    ty = find_var(consume_ident())->type_def;
+  assert(ty);
+  
   while (consume("*"))
     ty = pointer_to(ty);
   return ty;
@@ -646,8 +690,6 @@ static Type *basetype(void) {
 
 // struct-decl = "struct" "{" struct-member "}"
 static Type *struct_decl(void) {
-  expect("struct");
-  
   // Read a struct tag.
   Token *tag = consume_ident();
   if (tag && !peek("{")) {
@@ -767,4 +809,13 @@ static void global_var(void) {
   ty = read_type_suffix(ty);
   expect(";");
   new_gvar(name, ty);
+}
+
+
+static VarScope *push_scope(char *name) {
+  VarScope *sc = calloc(1, sizeof(VarScope));
+  sc->name = name;
+  sc->next = var_scope;
+  var_scope = sc;
+  return sc;
 }
