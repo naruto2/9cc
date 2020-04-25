@@ -215,7 +215,8 @@ static Node *expr(void) {
 
 // Returns true if the next token represents a type.
 static bool is_typename(void) {
-  return peek("char") || peek("int") || peek("struct") || find_typedef(token);
+  return peek("char") || peek("short") || peek("int") || peek("long") ||
+    peek("struct") || find_typedef(token);
 }
 
 
@@ -665,8 +666,8 @@ static Node *read_expr_stmt(void) {
 }
 
 
-
-// basetype = ("char" | "int" | struct-decl) "*"*
+// basetype = type "*"*
+// type = "char" | "short" | "int" | "long" | struct-decl | typedef-name
 static Type *basetype(void) {
   if (!is_typename())
     error_tok(token, "typename expected");
@@ -674,8 +675,12 @@ static Type *basetype(void) {
   Type *ty;
   if (consume("char")) 
     ty = char_type;
+  else if (consume("short"))
+    ty = short_type;
   else if ((consume("int")))
     ty = int_type;
+  else if (consume("long"))
+    ty = long_type;
   else if (consume("struct"))
     ty = struct_decl();
   else

@@ -147,7 +147,9 @@ struct Function {
 
 typedef enum {
 	      TY_CHAR,
+	      TY_SHORT,
 	      TY_INT,
+	      TY_LONG,
 	      TY_PTR,
 	      TY_ARRAY,
 	      TY_STRUCT,
@@ -201,6 +203,8 @@ int align_to(int n, int align);
 extern char *user_input;
 extern Token *token;
 extern Node *code[100];
-extern Type *int_type;
 extern Type *char_type;
+extern Type *short_type;
+extern Type *int_type;
+extern Type *long_type;
 extern char *filename;
