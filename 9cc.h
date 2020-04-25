@@ -153,6 +153,7 @@ typedef enum {
 	      TY_PTR,
 	      TY_ARRAY,
 	      TY_STRUCT,
+	      TY_FUNC,
 } TypeKind;
 
 struct Type {
@@ -162,6 +163,7 @@ struct Type {
   Type *base;      // pointer or array
   int array_len;   // array
   Member *members; // struct
+  Type *return_ty; // function
 };
 
 
@@ -192,11 +194,13 @@ bool at_eof(void);
 void add_type(Node *node);
 void codegen(Program *prog);
 void error_tok(Token *tok, char *fmt, ...);
+void warn_tok(Token *tok, char *fmt, ...);
 void expect(char *op);
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 Type *pointer_to(Type *base);
 Type *array_of(Type *base, int size);
+Type *func_type(Type *return_ty);
 int align_to(int n, int align);
 
 

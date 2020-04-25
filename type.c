@@ -30,20 +30,17 @@ Type *pointer_to(Type *base) {
 }
 
 
-#if 0
-Type *pointer_to(Type *base) {
-  Type *ty = calloc(1, sizeof(Type));
-  ty->kind = TY_PTR;
-  ty->size = 8;
-  ty->base = base;
-  return ty;
-}
-#endif 
-
 Type *array_of(Type *base, int len) {
   Type *ty = new_type(TY_ARRAY, base->size * len, base->align);
   ty->base = base;
   ty->array_len = len;
+  return ty;
+}
+
+
+Type *func_type(Type *return_ty) {
+  Type *ty = new_type(TY_FUNC, 1, 1);
+  ty->return_ty = return_ty;
   return ty;
 }
 
@@ -75,7 +72,6 @@ void add_type(Node *node) {
   case ND_NE:
   case ND_LT:
   case ND_LE:
-  case ND_FUNCALL:
   case ND_NUM:
     node->ty = long_type;
     return;
