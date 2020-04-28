@@ -86,7 +86,8 @@ static Type *enum_specifier(void);
 static Node *bitand(void);
 static Node *bitor(void);
 static Node *bitxor(void);
-
+static Node *logor(void);
+static Node *logand(void);
 
 
 // All local variable instances created during parseing are
@@ -218,10 +219,10 @@ static Node *new_binary(NodeKind kind, Node *lhs, Node *rhs, Token *tok) {
 }
 
 
-// assign    = bitor (assign-op assign)?
+// assign    = logor (assign-op assign)?
 // assign-op = "=" | "+=" | "-=" | "*=" | "/="
 static Node *assign(void) {
-  Node *node = bitor();
+  Node *node = logor();
   Token *tok;
 
   if ((tok = consume("=")))
@@ -250,6 +251,26 @@ static Node *assign(void) {
   }
   return node;
 }
+
+
+// logor = logand ("||" logand)*
+static Node *logor(void) {
+  Node *node = logand();
+  Token *tok;
+  while ((tok = consume("||")))
+    node = new_binary(ND_LOGOR, node, logand(), tok);
+  return node;
+}
+
+// logand = bitor ("&&" bitor)*
+static Node *logand(void) {
+  Node *node = bitor();
+  Token *tok;
+  while ((tok = consume("&&")))
+    node = new_binary(ND_LOGAND, node, bitor(), tok);
+  return node;
+}
+
 
 
 // bitor = bitxor ("|" bitxor)*
