@@ -83,6 +83,10 @@ static Type *abstract_declarator(Type *ty);
 static Type *type_name(void);
 static Node *cast(void);
 static Type *enum_specifier(void);
+static Node *bitand(void);
+static Node *bitor(void);
+static Node *bitxor(void);
+
 
 
 // All local variable instances created during parseing are
@@ -214,10 +218,10 @@ static Node *new_binary(NodeKind kind, Node *lhs, Node *rhs, Token *tok) {
 }
 
 
-// assign    = equality (assign-op assign)?
+// assign    = bitor (assign-op assign)?
 // assign-op = "=" | "+=" | "-=" | "*=" | "/="
 static Node *assign(void) {
-  Node *node = equality();
+  Node *node = bitor();
   Token *tok;
 
   if ((tok = consume("=")))
@@ -244,6 +248,34 @@ static Node *assign(void) {
     else
       return new_binary(ND_SUB_EQ, node, assign(), tok);
   }
+  return node;
+}
+
+
+// bitor = bitxor ("|" bitxor)*
+static Node *bitor(void) {
+  Node *node = bitxor();
+  Token *tok;
+  while ((tok = consume("|")))
+    node = new_binary(ND_BITOR, node, bitxor(), tok);
+  return node;
+}
+
+// bitxor = bitand ("^" bitand)*
+static Node *bitxor(void) {
+  Node *node = bitand();
+  Token *tok;
+  while ((tok = consume("^")))
+    node = new_binary(ND_BITXOR, node, bitxor(), tok);
+  return node;
+}
+
+// bitand = equality ("&" equality)*
+static Node *bitand(void) {
+  Node *node = equality();
+  Token *tok;
+  while ((tok = consume("&")))
+    node = new_binary(ND_BITAND, node, equality(), tok);
   return node;
 }
 

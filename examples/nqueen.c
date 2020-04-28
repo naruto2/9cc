@@ -5,6 +5,8 @@
 // $ gcc -static -o tmp tmp.s
 // $ ./tmp
 
+int printf();
+
 int print_board(int (*board)[10]) {
   for (int i = 0; i < 10; i++) {
     for (int j = 0; j < 10; j++)
