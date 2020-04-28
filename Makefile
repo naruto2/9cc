@@ -14,6 +14,14 @@ test: 9cc
 	gcc -static -o tmp tmp.s tmp2.o
 	./tmp
 
+queen: 9cc
+	./9cc examples/nqueen.c > tmp.s
+	gcc -static -o tmp tmp.s
+	./tmp > tmp.txt
+	gcc examples/nqueen.c -o tmpo
+	./tmpo > tmpo.txt
+	diff tmp.txt tmpo.txt
+
 clean:
 	rm -f 9cc *.o *~ tmp*
 
