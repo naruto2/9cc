@@ -106,4 +106,5 @@ breakステートメントを追加
 continueステートメントを追加
 goto文とラベル文を追加
 switch case文を追加
+関数が void型を返すのを許す
 2020-4-29
