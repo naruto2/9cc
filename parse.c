@@ -341,6 +341,7 @@ static Node *stmt(void) {
 //       | "while" "(" expr ")" stmt
 //       | "for" "(" (expr? ";" declaration) expr? ";" expr? ")" stmt
 //       | "{" stmt* "}"
+//       | "break" ";"
 //       | declaration
 //       | expr ";"
 static Node *stmt2(void) {
@@ -409,7 +410,11 @@ static Node *stmt2(void) {
     return node;
   }
 
-
+  if ((tok = consume("break"))) {
+    expect(";");
+    return new_node(ND_BREAK, tok);
+  }
+  
   if (is_typename())
     return declaration();
 
