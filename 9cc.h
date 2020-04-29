@@ -101,6 +101,8 @@ typedef enum {
 	      ND_IF,         // "if"
 	      ND_WHILE,      // "while"
 	      ND_FOR,        // "for"
+	      ND_SWITCH,     // "switch"
+	      ND_CASE,       // "case"
 	      ND_BLOCK,      // { ... }
 	      ND_BREAK,      // "break"
 	      ND_CONTINUE,   // "continue"
@@ -122,6 +124,9 @@ typedef struct Node Node;
 struct Node {
   NodeKind kind; // ノードの型
   Node *next;    // Next node
+
+  Type *ty;      // Type, e.g. int or pointer to int
+  Token *tok;    // Representative token
 
   Node *lhs;     // 左辺
   Node *rhs;     // 右辺
@@ -146,11 +151,17 @@ struct Node {
 
   char *label_name;
   
-  Var *var;      // Used if kind == ND=VAR
-  long val;       // kindがND_NUMの場合のみ使う
-  int offset;    // kindがND_LVARの場合のみ使う
-  Type *ty;      // Type, e.g. int or pointer to int
-  Token *tok;    // Representative token
+  // Switch-cases
+  Node *case_next;
+  Node *default_case;
+  int case_label;
+  int case_end_label;
+
+  // Variable
+  Var *var;
+
+  // Integer literal
+  long val;
 };
 
 

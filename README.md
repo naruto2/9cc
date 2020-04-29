@@ -105,4 +105,5 @@ func paramコンテキストで配列からポインタへの減衰を実装す�
 breakステートメントを追加
 continueステートメントを追加
 goto文とラベル文を追加
+switch case文を追加
 2020-4-29
