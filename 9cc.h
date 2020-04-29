@@ -104,6 +104,8 @@ typedef enum {
 	      ND_BLOCK,      // { ... }
 	      ND_BREAK,      // "break"
 	      ND_CONTINUE,   // "continue"
+	      ND_GOTO,       // "goto"
+	      ND_LABEL,      // Labeled statement
 	      ND_FUNCALL,    // Function call
 	      ND_EXPR_STMT,  // Expression statement
 	      ND_STMT_EXPR,  // Statement expression
@@ -141,9 +143,11 @@ struct Node {
   // Function call
   char *funcname;
   Node *args;
+
+  char *label_name;
   
   Var *var;      // Used if kind == ND=VAR
-  int val;       // kindがND_NUMの場合のみ使う
+  long val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う
   Type *ty;      // Type, e.g. int or pointer to int
   Token *tok;    // Representative token
