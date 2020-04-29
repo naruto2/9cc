@@ -51,7 +51,7 @@ int main() {
   int board[100];
   for (int i = 0; i < 100; i++)
     board[i] = 0;
-  solve(board, 0);
+  solve((void*)board, 0);
   return 0;
 }
 
