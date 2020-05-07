@@ -50,6 +50,7 @@ static char *new_label(void);
 static Node *new_node(NodeKind kind, Token *tok);
 static Node *new_binary(NodeKind kind, Node *lhs, Node *rhs, Token *tok);
 static Node *assign(void);
+static Node *conditional(void);
 static Node *expr(void);
 static bool is_typename(void);
 static Node *stmt(void);
@@ -232,10 +233,10 @@ static Node *new_binary(NodeKind kind, Node *lhs, Node *rhs, Token *tok) {
 }
 
 
-// assign    = logor (assign-op assign)?
+// assign    = conditional (assign-op assign)?
 // assign-op = "=" | "+=" | "-=" | "*=" | "/=" | "<<=" | ">>="
 static Node *assign(void) {
-  Node *node = logor();
+  Node *node = conditional();
   Token *tok;
 
   if ((tok = consume("=")))
@@ -269,6 +270,22 @@ static Node *assign(void) {
       return new_binary(ND_SUB_EQ, node, assign(), tok);
   }
   return node;
+}
+
+
+// conditional = logor ("?" expr ":" conditional)?
+static Node *conditional(void) {
+  Node *node = logor();
+  Token *tok = consume("?");
+  if (!tok)
+    return node;
+
+  Node *ternary = new_node(ND_TERNARY, tok);
+  ternary->cond = node;
+  ternary->then = expr();
+  expect(":");
+  ternary->els = conditional();
+  return ternary;
 }
 
 
