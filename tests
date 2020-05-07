@@ -79,6 +79,10 @@ int param_decay(int x[]) { return x[0]; }
 
 void voidfn() {}
 
+int rax() { return 1; }
+
+int ah;
+
 int main() {
   assert(8, ({ int a=3; int z=5; a+z; }), "int a=3; int z=5; a+z;");
 
@@ -503,7 +507,9 @@ int main() {
   assert(0, ({ int x[2][3]={{1,2}}; x[1][0]; }), "int x[2][3]={{1,2}}; x[1][0];");
   assert(0, ({ int x[2][3]={{1,2}}; x[1][2]; }), "int x[2][3]={{1,2}}; x[1][2];");
   
-
+  assert(0,({int rax=0;rax;}),"int rax=0; rax;");
+  assert(1,({rax();}),"rax()");
+  assert(0,({ah;}),"ah");
   printf("OK\n");
   return 0;
 }

@@ -32,7 +32,7 @@ static void gen_addr(Node *node) {
       printf("  lea rax, [rbp-%d]\n", var->offset);
       printf("  push rax\n");
     } else {
-      printf("  push offset %s\n", var->name);
+      iprintf("  push offset %s\n", var->name);
     }
     return;
   }
@@ -476,10 +476,10 @@ static void gen(Node *node) {
     printf("  jmp .L.continue.%d\n", contseq);
     return;
   case ND_GOTO:
-    printf("  jmp .L.label.%s.%s\n", funcname, node->label_name);
+    iprintf("  jmp .L.label.%s.%s\n", funcname, node->label_name);
     return;
   case ND_LABEL:
-    printf(".L.label.%s.%s:\n", funcname, node->label_name);
+    iprintf(".L.label.%s.%s:\n", funcname, node->label_name);
     gen(node->lhs);
     return;
   case ND_FUNCALL: {
@@ -499,12 +499,12 @@ static void gen(Node *node) {
     printf("  and rax, 15\n");
     printf("  jnz .L.call.%d\n", seq);
     printf("  mov rax, 0\n");
-    printf("  call %s\n", node->funcname);
+    iprintf("  call %s\n", node->funcname);
     printf("  jmp .L.end.%d\n", seq);
     printf(".L.call.%d:\n", seq);
     printf("  sub rsp, 8\n");
     printf("  mov rax, 0\n");
-    printf("  call %s\n", node->funcname);
+    iprintf("  call %s\n", node->funcname);
     printf("  add rsp, 8\n");
     printf(".L.end.%d:\n", seq);
     printf("  push rax\n");
@@ -513,7 +513,7 @@ static void gen(Node *node) {
   case ND_RETURN:
     gen(node->lhs);
     printf("  pop rax\n");
-    printf("  jmp .L.return.%s\n", funcname);
+    iprintf("  jmp .L.return.%s\n", funcname);
     return;
   case ND_CAST:
     gen(node->lhs);
@@ -549,7 +549,7 @@ static void emit_data(Program *prog) {
   printf(".data\n");
   for (VarList *vl = prog->globals; vl; vl = vl->next) {
     Var *var = vl->var;
-    printf("%s:\n", var->name);
+    iprintf("%s:\n", var->name);
 
     if (!var->contents) {
       printf("  .zero %d\n", var->ty->size);
@@ -567,8 +567,8 @@ static void emit_text(Program *prog) {
 
   for (Function *fn = prog->fns; fn; fn = fn->next) {
     if (!fn->is_static)
-      printf(".global %s\n", fn->name);
-    printf("%s:\n", fn->name);
+      iprintf(".global %s\n", fn->name);
+    iprintf("%s:\n", fn->name);
     funcname = fn->name;
 
     // Prologue
@@ -588,7 +588,7 @@ static void emit_text(Program *prog) {
       gen(node);
 
     // Epilogue
-    printf(".L.return.%s:\n", funcname);
+    iprintf(".L.return.%s:\n", funcname);
     printf("  mov rsp, rbp\n");
     printf("  pop rbp\n");
     printf("  ret\n");
