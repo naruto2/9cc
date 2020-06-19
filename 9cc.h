@@ -11,6 +11,7 @@
 
 typedef struct Type Type;
 typedef struct Member Member;
+typedef struct Initializer Initializer;
 
 
 // Token
@@ -50,8 +51,7 @@ struct Var {
   int offset;    // Offset from RBP
 
   // Global variable
-  char *contents;
-  int   cont_len;
+  Initializer *initializer;
 };
 
 
@@ -169,6 +169,19 @@ struct Node {
   long val;
 };
 
+// Global variable initializer. Global variables can be initialized
+// either by a constant expression or a pointer to another global
+// variable.
+struct Initializer {
+  Initializer *next;
+
+  // Constant expression
+  int sz;
+  long val;
+
+  // Reference to another global variable
+  char *label;
+};
 
 typedef struct Function Function;
 struct Function {
