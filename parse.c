@@ -1,52 +1,25 @@
 #include "9cc.h"
 
-// Scope for local variables, global variables, typedefs
-// or enum constants
-typedef struct VarScope VarScope;
-struct VarScope {
-  VarScope *next;
-  char *name;
-  int depth;
-
-  Var *var;
-  Type *type_def;
-  Type *enum_ty;
-  int enum_val;
-};
-
-// Scope for struct or enum tags
-typedef struct TagScope TagScope;
-struct TagScope {
-  TagScope *next;
-  char *name;
-  int depth;
-  Type *ty;
-};
-
-typedef struct {
-  VarScope *var_scope;
-  TagScope *tag_scope;
-} Scope;
-
 // All local variable instances created during parsing are
 // accumulated to this list.
-static VarList *locals;
+ VarList *locals;
 
 // Likewise, global variables are accumulated to this list.
-static VarList *globals;
+ VarList *globals;
 
 // C has two block scopes; one is for variables/typedefs and
 // the other is for struct/union/enum tags.
-static VarScope *var_scope;
-static TagScope *tag_scope;
-static int scope_depth;
+ VarScope *var_scope;
+ TagScope *tag_scope;
+ int scope_depth;
 
 // Points to a node representing a switch if we are parsing
 // a switch statement. Otherwise, NULL.
-static Node *current_switch;
+ Node *current_switch;
+
 
 // Begin a block scope
-static Scope *enter_scope(void) {
+Scope *enter_scope(void) {
   Scope *sc = calloc(1, sizeof(Scope));
   sc->var_scope = var_scope;
   sc->tag_scope = tag_scope;
@@ -55,60 +28,61 @@ static Scope *enter_scope(void) {
 }
 
 // End a block scope
-static void leave_scope(Scope *sc) {
+void leave_scope(Scope *sc) {
   var_scope = sc->var_scope;
   tag_scope = sc->tag_scope;
   scope_depth--;
 }
 
 // Find a variable or a typedef by name.
-static VarScope *find_var(Token *tok) {
+VarScope *find_var(Token *tok) {
   for (VarScope *sc = var_scope; sc; sc = sc->next)
     if (strlen(sc->name) == tok->len && !strncmp(tok->str, sc->name, tok->len))
       return sc;
   return NULL;
 }
 
-static TagScope *find_tag(Token *tok) {
+TagScope *find_tag(Token *tok) {
   for (TagScope *sc = tag_scope; sc; sc = sc->next)
     if (strlen(sc->name) == tok->len && !strncmp(tok->str, sc->name, tok->len))
       return sc;
   return NULL;
 }
 
-static Node *new_node(NodeKind kind, Token *tok) {
+Node *new_node(NodeKind kind, Token *tok) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
   node->tok = tok;
   return node;
 }
 
-static Node *new_binary(NodeKind kind, Node *lhs, Node *rhs, Token *tok) {
+Node *new_binary(NodeKind kind, Node *lhs, Node *rhs, Token *tok) {
   Node *node = new_node(kind, tok);
   node->lhs = lhs;
   node->rhs = rhs;
   return node;
 }
 
-static Node *new_unary(NodeKind kind, Node *expr, Token *tok) {
+Node *new_unary(NodeKind kind, Node *expr, Token *tok) {
   Node *node = new_node(kind, tok);
   node->lhs = expr;
   return node;
 }
 
-static Node *new_num(long val, Token *tok) {
+
+Node *new_num(long val, Token *tok) {
   Node *node = new_node(ND_NUM, tok);
   node->val = val;
   return node;
 }
 
-static Node *new_var_node(Var *var, Token *tok) {
+Node *new_var_node(Var *var, Token *tok) {
   Node *node = new_node(ND_VAR, tok);
   node->var = var;
   return node;
 }
 
-static VarScope *push_scope(char *name) {
+VarScope *push_scope(char *name) {
   VarScope *sc = calloc(1, sizeof(VarScope));
   sc->name = name;
   sc->next = var_scope;
@@ -117,7 +91,7 @@ static VarScope *push_scope(char *name) {
   return sc;
 }
 
-static Var *new_var(char *name, Type *ty, bool is_local) {
+Var *new_var(char *name, Type *ty, bool is_local) {
   Var *var = calloc(1, sizeof(Var));
   var->name = name;
   var->ty = ty;
@@ -125,7 +99,7 @@ static Var *new_var(char *name, Type *ty, bool is_local) {
   return var;
 }
 
-static Var *new_lvar(char *name, Type *ty) {
+Var *new_lvar(char *name, Type *ty) {
   Var *var = new_var(name, ty, true);
   push_scope(name)->var = var;
 
@@ -136,7 +110,7 @@ static Var *new_lvar(char *name, Type *ty) {
   return var;
 }
 
-static Var *new_gvar(char *name, Type *ty, bool is_static, bool emit) {
+Var *new_gvar(char *name, Type *ty, bool is_static, bool emit) {
   Var *var = new_var(name, ty, false);
   var->is_static = is_static;
   push_scope(name)->var = var;
@@ -150,7 +124,7 @@ static Var *new_gvar(char *name, Type *ty, bool is_static, bool emit) {
   return var;
 }
 
-static Type *find_typedef(Token *tok) {
+Type *find_typedef(Token *tok) {
   if ((tok->kind == TK_IDENT)) {
     VarScope *sc = find_var(tok);
     if (sc)
@@ -159,22 +133,19 @@ static Type *find_typedef(Token *tok) {
   return NULL;
 }
 
-static char *new_label(void) {
+
+char *new_label(void) {
   static int cnt = 0;
   char buf[20];
   sprintf(buf, ".L.data.%d", cnt++);
   return strndup(buf, 20);
 }
 
-typedef enum {
-  TYPEDEF = 1 << 0,
-  STATIC  = 1 << 1,
-  EXTERN  = 1 << 2,
-} StorageClass;
 
+bool is_function(void);
 static Function *function(void);
-static Type *basetype(StorageClass *sclass);
-static Type *declarator(Type *ty, char **name);
+Type *basetype(StorageClass *sclass);
+Type *declarator(Type *ty, char **name);
 static Type *abstract_declarator(Type *ty);
 static Type *type_suffix(Type *ty);
 static Type *type_name(void);
@@ -207,26 +178,9 @@ static Node *cast(void);
 static Node *unary(void);
 static Node *postfix(void);
 static Node *compound_literal(void);
-static Node *primary(void);
+Node *primary(void);
 
-// Determine whether the next top-level item is a function
-// or a global variable by looking ahead input tokens.
-static bool is_function(void) {
-  Token *tok = token;
-  bool isfunc = false;
-  
-  StorageClass sclass;
-  Type *ty = basetype(&sclass);
-
-  if (!consume(";")) {
-    char *name = NULL;
-    declarator(ty, &name);
-    isfunc = name && consume("(");
-  }
-
-  token = tok;
-  return isfunc;
-}
+bool is_function(void);
 
 // program = (global-var | function)*
 Program *program(void) {
@@ -260,7 +214,7 @@ Program *program(void) {
 //
 // Note that "typedef" and "static" can appear anywhere in a basetype.
 // "int" can appear anywhere if type is short, long or long long.
-static Type *basetype(StorageClass *sclass) {
+Type *basetype(StorageClass *sclass) {
   if (!is_typename())
     error_tok(token, "typename expected");
 
@@ -366,7 +320,7 @@ static Type *basetype(StorageClass *sclass) {
 }
 
 // declarator = "*"* ("(" declarator ")" | ident) type-suffix
-static Type *declarator(Type *ty, char **name) {
+Type *declarator(Type *ty, char **name) {
   while (consume("*"))
     ty = pointer_to(ty);
 
@@ -1791,6 +1745,8 @@ static Node *func_args(void) {
   return head;
 }
 
+
+
 // primary = "(" "{" stmt-expr-tail
 //         | "(" expr ")"
 //         | "sizeof" "(" type-name ")"
@@ -1799,7 +1755,7 @@ static Node *func_args(void) {
 //         | ident func-args?
 //         | str
 //         | num
-static Node *primary(void) {
+Node *primary(void) {
   Token *tok;
 
   if ((tok = consume("("))) {

@@ -273,7 +273,6 @@ Type *func_type(Type *return_ty);
 int align_to(int n, int align);
 Type *enum_type(void);
 Type *struct_type(void);
-int iprintf(char *fmt, ...);
 
 extern char *user_input;
 extern Token *token;
@@ -285,3 +284,77 @@ extern Type *short_type;
 extern Type *int_type;
 extern Type *long_type;
 extern char *filename;
+
+// parse.cより
+
+// Scope for local variables, global variables, typedefs
+// or enum constants
+typedef struct VarScope VarScope;
+struct VarScope {
+  VarScope *next;
+  char *name;
+  int depth;
+
+  Var *var;
+  Type *type_def;
+  Type *enum_ty;
+  int enum_val;
+};
+
+// Scope for struct or enum tags
+typedef struct TagScope TagScope;
+struct TagScope {
+  TagScope *next;
+  char *name;
+  int depth;
+  Type *ty;
+};
+
+typedef struct {
+  VarScope *var_scope;
+  TagScope *tag_scope;
+} Scope;
+
+
+typedef enum {
+	      TYPEDEF = 1 << 0,
+	      STATIC  = 1 << 1,
+	      EXTERN  = 1 << 2,
+} StorageClass;
+
+
+// All local variable instances created during parsing are
+// accumulated to this list.
+extern VarList *locals;
+
+// Likewise, global variables are accumulated to this list.
+extern VarList *globals;
+
+// C has two block scopes; one is for variables/typedefs and
+// the other is for struct/union/enum tags.
+extern VarScope *var_scope;
+extern TagScope *tag_scope;
+extern int scope_depth;
+
+// Points to a node representing a switch if we are parsing
+// a switch statement. Otherwise, NULL.
+extern Node *current_switch;
+
+
+Scope *enter_scope(void) ;
+void leave_scope(Scope *sc);
+VarScope *find_var(Token *tok) ;
+TagScope *find_tag(Token *tok) ;
+Node *new_node(NodeKind kind, Token *tok) ;
+Node *new_binary(NodeKind kind, Node *lhs, Node *rhs, Token *tok) ;
+Node *new_unary(NodeKind kind, Node *expr, Token *tok) ;
+Node *new_num(long val, Token *tok) ;
+Node *new_var_node(Var *var, Token *tok) ;
+VarScope *push_scope(char *name) ;
+Var *new_var(char *name, Type *ty, bool is_local) ;
+Var *new_lvar(char *name, Type *ty) ;
+Var *new_gvar(char *name, Type *ty, bool is_static, bool emit) ;
+Type *find_typedef(Token *tok) ;
+char *new_label(void) ;
+
+Node *primary(void);

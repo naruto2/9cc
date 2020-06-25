@@ -63,8 +63,10 @@ for i in $TMP/*.c; do
 done
 
 expand main.c
+expand mini.c
 expand type.c
-expand parse.c
+
 expand codegen.c
+expand tokenize.c
 
 gcc -static -o 9cc-gen2 $TMP/*.o
