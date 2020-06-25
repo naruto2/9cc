@@ -144,4 +144,5 @@ _Alignofを追加
 frankenbuildのスクリプトを追加する
 ＆=、| =および^ =を追加します
 do ... while を追加
+parse.cとcodegen.cをfrankenbuildに追加します
 2020-6-25
