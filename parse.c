@@ -1119,6 +1119,7 @@ static Node *stmt(void) {
 //       | "break" ";"
 //       | "continue" ";"
 //       | "goto" ident ";"
+//       | ";"
 //       | ident ":" stmt
 //       | declaration
 //       | expr ";"
@@ -1246,6 +1247,9 @@ static Node *stmt2(void) {
     return node;
   }
 
+  if ((tok = consume(";")))
+    return new_node(ND_NULL, tok);
+  
   if ((tok = consume_ident())) {
     if (consume(":")) {
       Node *node = new_unary(ND_LABEL, stmt(), tok);
