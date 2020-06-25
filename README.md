@@ -147,4 +147,5 @@ do ... while を追加
 parse.cとcodegen.cをfrankenbuildに追加します
 boolを返す関数のAPIを修正
 可変個関数の呼び出しを許可する
+可変長関数をサポートする__builtin_va_startを追加 
 2020-6-25
