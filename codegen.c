@@ -546,15 +546,27 @@ static void load_arg(Var *var, int idx) {
 
 
 static void emit_data(Program *prog) {
-  printf(".data\n");
+  printf(".bss\n");
+
   for (VarList *vl = prog->globals; vl; vl = vl->next) {
     Var *var = vl->var;
+
+    if (var->initializer)
+      continue;
+    
     iprintf("%s:\n", var->name);
 
-    if (!var->initializer) {
-      printf("  .zero %d\n", var->ty->size);
+    printf("  .zero %d\n", var->ty->size);
+  }
+
+  printf(".data\n");
+
+  for (VarList *vl = prog->globals; vl; vl = vl->next) {
+    Var *var = vl->var;
+    if (!var->initializer)
       continue;
-    }
+    
+    iprintf("%s:\n", var->name);
 
     for (Initializer *init = var->initializer; init; init = init->next) {
       if (init->label)
