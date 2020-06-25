@@ -145,4 +145,5 @@ frankenbuildのスクリプトを追加する
 ＆=、| =および^ =を追加します
 do ... while を追加
 parse.cとcodegen.cをfrankenbuildに追加します
+boolを返す関数のAPIを修正
 2020-6-25
