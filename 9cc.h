@@ -52,6 +52,7 @@ struct Var {
   int offset;    // Offset from RBP
 
   // Global variable
+  bool is_static;
   Initializer *initializer;
 };
 
