@@ -1130,6 +1130,7 @@ static Node *stmt(void) {
 //       | "default" ":" stmt
 //       | "while" "(" expr ")" stmt
 //       | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
+//       | "do" stmt "while" "(" expr ")" ";"
 //       | "{" stmt* "}"
 //       | "break" ";"
 //       | "continue" ";"
@@ -1232,6 +1233,17 @@ static Node *stmt2(void) {
     return node;
   }
 
+  if ((tok = consume("do"))) {
+    Node *node = new_node(ND_DO, tok);
+    node->then = stmt();
+    expect("while");
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    expect(";");
+    return node;
+  }
+  
   if ((tok = consume("{"))) {
     Node head = {};
     Node *cur = &head;
