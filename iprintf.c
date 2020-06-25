@@ -20,7 +20,7 @@ static char *intelprob(char *str) {
 }
 
 
-int iprintf(const char *format, ...) {
+int iprintf(char *format, ...) {
   va_list argptr;
   va_start(argptr, format);
   char *str = (char*)format;

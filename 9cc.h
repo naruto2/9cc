@@ -268,7 +268,7 @@ Type *func_type(Type *return_ty);
 int align_to(int n, int align);
 Type *enum_type(void);
 Type *struct_type(void);
-int iprintf(const char *fmt, ...);
+int iprintf(char *fmt, ...);
 
 extern char *user_input;
 extern Token *token;

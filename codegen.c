@@ -1,11 +1,9 @@
 #include "9cc.h"
 
-
 static char *argreg1[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 static char *argreg2[] = {"di", "si", "dx", "cx", "r8w", "r9w"};
 static char *argreg4[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 static char *argreg8[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
-
 
 static int labelseq = 1;
 static int brkseq;
@@ -13,15 +11,6 @@ static int contseq;
 static char *funcname;
 
 static void gen(Node *node);
-static void gen_addr(Node *node);
-
-
-static void gen_lval(Node *node) {
-  if (node->ty->kind == TY_ARRAY)
-    error_tok(node->tok, "not an lvalue");
-  gen_addr(node);
-}
-
 
 // Pushes the given node's address to the stack.
 static void gen_addr(Node *node) {
@@ -35,7 +24,7 @@ static void gen_addr(Node *node) {
       printf("  lea rax, [rbp-%d]\n", var->offset);
       printf("  push rax\n");
     } else {
-      iprintf("  push offset %s\n", var->name);
+      printf("  push offset %s\n", var->name);
     }
     return;
   }
@@ -49,15 +38,21 @@ static void gen_addr(Node *node) {
     printf("  push rax\n");
     return;
   default:
-    break;
+    ;
   }
 
   error_tok(node->tok, "not an lvalue");
 }
 
+static void gen_lval(Node *node) {
+  if (node->ty->kind == TY_ARRAY)
+    error_tok(node->tok, "not an lvalue");
+  gen_addr(node);
+}
 
 static void load(Type *ty) {
   printf("  pop rax\n");
+
   if (ty->size == 1) {
     printf("  movsx rax, byte ptr [rax]\n");
   } else if (ty->size == 2) {
@@ -92,10 +87,9 @@ static void store(Type *ty) {
     assert(ty->size == 8);
     printf("  mov [rax], rdi\n");
   }
-  
+
   printf("  push rdi\n");
 }
-
 
 static void truncate(Type *ty) {
   printf("  pop rax\n");
@@ -115,20 +109,17 @@ static void truncate(Type *ty) {
   printf("  push rax\n");
 }
 
-
 static void inc(Type *ty) {
   printf("  pop rax\n");
   printf("  add rax, %d\n", ty->base ? ty->base->size : 1);
   printf("  push rax\n");
 }
 
-
 static void dec(Type *ty) {
   printf("  pop rax\n");
   printf("  sub rax, %d\n", ty->base ? ty->base->size : 1);
   printf("  push rax\n");
 }
-
 
 static void gen_binary(Node *node) {
   printf("  pop rdi\n");
@@ -208,24 +199,22 @@ static void gen_binary(Node *node) {
     printf("  movzb rax, al\n");
     break;
   default:
-    break;
+    ;
   }
 
   printf("  push rax\n");
 }
 
-
 // Generate code for a given node.
 static void gen(Node *node) {
-
   switch (node->kind) {
   case ND_NULL:
     return;
   case ND_NUM:
     if (node->val == (int)node->val) {
-      printf("  push %ld\n", (long int)node->val);
+      printf("  push %ld\n", node->val);
     } else {
-      printf("  movabs rax, %ld\n", (long int)node->val);
+      printf("  movabs rax, %ld\n", node->val);
       printf("  push rax\n");
     }
     return;
@@ -395,7 +384,7 @@ static void gen(Node *node) {
     int brk = brkseq;
     int cont = contseq;
     brkseq = contseq = seq;
-    
+
     printf(".L.continue.%d:\n", seq);
     gen(node->cond);
     printf("  pop rax\n");
@@ -485,10 +474,10 @@ static void gen(Node *node) {
     printf("  jmp .L.continue.%d\n", contseq);
     return;
   case ND_GOTO:
-    iprintf("  jmp .L.label.%s.%s\n", funcname, node->label_name);
+    printf("  jmp .L.label.%s.%s\n", funcname, node->label_name);
     return;
   case ND_LABEL:
-    iprintf(".L.label.%s.%s:\n", funcname, node->label_name);
+    printf(".L.label.%s.%s:\n", funcname, node->label_name);
     gen(node->lhs);
     return;
   case ND_FUNCALL: {
@@ -497,9 +486,10 @@ static void gen(Node *node) {
       gen(arg);
       nargs++;
     }
+
     for (int i = nargs - 1; i >= 0; i--)
       printf("  pop %s\n", argreg8[i]);
-    
+
     // We need to align RSP to a 16 byte boundary before
     // calling a function because it is an ABI requirement.
     // RAX is set to 0 for variadic function.
@@ -508,12 +498,12 @@ static void gen(Node *node) {
     printf("  and rax, 15\n");
     printf("  jnz .L.call.%d\n", seq);
     printf("  mov rax, 0\n");
-    iprintf("  call %s\n", node->funcname);
+    printf("  call %s\n", node->funcname);
     printf("  jmp .L.end.%d\n", seq);
     printf(".L.call.%d:\n", seq);
     printf("  sub rsp, 8\n");
     printf("  mov rax, 0\n");
-    iprintf("  call %s\n", node->funcname);
+    printf("  call %s\n", node->funcname);
     printf("  add rsp, 8\n");
     printf(".L.end.%d:\n", seq);
     printf("  push rax\n");
@@ -524,22 +514,58 @@ static void gen(Node *node) {
       gen(node->lhs);
       printf("  pop rax\n");
     }
-    iprintf("  jmp .L.return.%s\n", funcname);
+    printf("  jmp .L.return.%s\n", funcname);
     return;
   case ND_CAST:
     gen(node->lhs);
     truncate(node->ty);
     return;
   default:
-    break;
+    ;
   }
-  
+
   gen(node->lhs);
   gen(node->rhs);
-
   gen_binary(node);
 }
 
+static void emit_data(Program *prog) {
+  for (VarList *vl = prog->globals; vl; vl = vl->next)
+    if (!vl->var->is_static)
+      printf(".global %s\n", vl->var->name);
+
+  printf(".bss\n");
+
+  for (VarList *vl = prog->globals; vl; vl = vl->next) {
+    Var *var = vl->var;
+    if (var->initializer)
+      continue;
+
+    printf(".align %d\n", var->ty->align);
+    printf("%s:\n", var->name);
+    printf("  .zero %d\n", var->ty->size);
+  }
+
+  printf(".data\n");
+
+  for (VarList *vl = prog->globals; vl; vl = vl->next) {
+    Var *var = vl->var;
+    if (!var->initializer)
+      continue;
+
+    printf(".align %d\n", var->ty->align);
+    printf("%s:\n", var->name);
+
+    for (Initializer *init = var->initializer; init; init = init->next) {
+      if (init->label)
+        printf("  .quad %s%+ld\n", init->label, init->addend);
+      else if (init->sz == 1)
+        printf("  .byte %ld\n", init->val);
+      else
+        printf("  .%dbyte %ld\n", init->sz, init->val);
+    }
+  }
+}
 
 static void load_arg(Var *var, int idx) {
   int sz = var->ty->size;
@@ -555,54 +581,13 @@ static void load_arg(Var *var, int idx) {
   }
 }
 
-
-static void emit_data(Program *prog) {
-  for (VarList *vl = prog->globals; vl; vl = vl->next)
-    if (!vl->var->is_static)
-      printf(".global %s\n", vl->var->name);
-
-  printf(".bss\n");
-
-  for (VarList *vl = prog->globals; vl; vl = vl->next) {
-    Var *var = vl->var;
-
-    if (var->initializer)
-      continue;
-    
-    printf(".align %d\n", var->ty->align);
-    iprintf("%s:\n", var->name);
-    printf("  .zero %d\n", var->ty->size);
-  }
-
-  printf(".data\n");
-
-  for (VarList *vl = prog->globals; vl; vl = vl->next) {
-    Var *var = vl->var;
-    if (!var->initializer)
-      continue;
-    
-    printf(".align %d\n", var->ty->align);
-    iprintf("%s:\n", var->name);
-
-    for (Initializer *init = var->initializer; init; init = init->next) {
-      if (init->label)
-	printf("  .quad %s%+ld\n", init->label, init->addend);
-      else if (init->sz == 1)
-	printf("  .byte %ld\n", init->val);
-      else
-	printf("  .%dbyte %ld\n", init->sz, init->val);
-    }
-  }
-}
-
-
 static void emit_text(Program *prog) {
   printf(".text\n");
 
   for (Function *fn = prog->fns; fn; fn = fn->next) {
     if (!fn->is_static)
-      iprintf(".global %s\n", fn->name);
-    iprintf("%s:\n", fn->name);
+      printf(".global %s\n", fn->name);
+    printf("%s:\n", fn->name);
     funcname = fn->name;
 
     // Prologue
@@ -610,25 +595,22 @@ static void emit_text(Program *prog) {
     printf("  mov rbp, rsp\n");
     printf("  sub rsp, %d\n", fn->stack_size);
 
-
     // Push arguments to the stack
     int i = 0;
     for (VarList *vl = fn->params; vl; vl = vl->next)
       load_arg(vl->var, i++);
 
-    
     // Emit code
     for (Node *node = fn->node; node; node = node->next)
       gen(node);
 
     // Epilogue
-    iprintf(".L.return.%s:\n", funcname);
+    printf(".L.return.%s:\n", funcname);
     printf("  mov rsp, rbp\n");
     printf("  pop rbp\n");
     printf("  ret\n");
   }
 }
-
 
 void codegen(Program *prog) {
   printf(".intel_syntax noprefix\n");
