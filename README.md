@@ -154,4 +154,5 @@ parse.cの内容を少しづつmini.cに追い出している。関数のstatic�
 2020-6-25
 
 parse.c内の関数 basetype()および primary()がコケることが判明
+primary()をprimary_[56789]()および primary_final()に分割したら、mini.cに追い出すことが出来た。(何故か)
 2020-6-26

@@ -1760,3 +1760,129 @@ void global_var(void) {
     error_tok(tok, "incomplete type");
   expect(";");
 }
+
+
+Node *primary_5(Token *tok){
+    Node *node = unary();
+    add_type(node);
+    if (node->ty->is_incomplete)
+      error_tok(node->tok, "incomplete type");
+    return new_num(node->ty->size, tok);
+}
+
+
+
+Node *primary_6(Token *tok) {
+  expect("(");
+    Type *ty = type_name();
+    expect(")");
+    return new_num(ty->align, tok);
+}
+
+
+Node *primary_7(Token *tok) {
+      Node *node = new_node(ND_FUNCALL, tok);
+      node->funcname = strndup(tok->str, tok->len);
+      node->args = func_args();
+      add_type(node);
+
+      VarScope *sc = find_var(tok);
+      if (sc) {
+        if (!sc->var || sc->var->ty->kind != TY_FUNC)
+          error_tok(tok, "not a function");
+        node->ty = sc->var->ty->return_ty;
+      } else if (!strcmp(node->funcname, "__builtin_va_start")) {
+	node->ty = void_type;
+      } else {
+        warn_tok(node->tok, "implicit declaration of a function");
+        node->ty = int_type;
+      }
+      return node;
+}
+
+Node *primary_8(Token *tok) {
+    // Variable or enum constant
+    Node *ret = NULL;
+    VarScope *sc = find_var(tok);
+    if (sc) {
+      if (sc->var)
+        ret = new_var_node(sc->var, tok);
+      if (sc->enum_ty)
+        ret = new_num(sc->enum_val, tok);
+    }
+    return ret;
+}
+
+Node *primary_9(Token *tok) {
+  token = token->next;
+    
+    Type *ty = array_of(char_type, tok->cont_len);
+    Var *var = new_gvar(new_label(), ty, true, true);
+    
+    var->initializer = gvar_init_string(tok->contents, tok->cont_len);
+    return new_var_node(var, tok);
+}
+
+Node *primary_final(Token *tok) {
+  if (tok->kind != TK_NUM)
+    error_tok(tok, "expected expression");
+  return new_num(expect_number(), tok);
+}
+
+
+// primary = "(" "{" stmt-expr-tail
+//         | "(" expr ")"
+//         | "sizeof" "(" type-name ")"
+//         | "sizeof" unary
+//         | "_Alignof" "(" type-name ")"
+//         | ident func-args?
+//         | str
+//         | num
+Node *primary(void) {
+  Token *tok;
+
+  if ((tok = consume("("))) {
+    if (consume("{"))
+      return stmt_expr(tok);
+
+    Node *node = expr();
+    expect(")");
+    return node;
+  }
+
+  if ((tok = consume("sizeof"))) {
+    if (consume("(")) {
+      if (is_typename()) {
+        Type *ty = type_name();
+        if (ty->is_incomplete)
+          error_tok(tok, "incomplete type");
+        expect(")");
+        return new_num(ty->size, tok);
+      }
+      token = tok->next;
+    }
+    return primary_5(tok);
+  }
+
+  if ((tok = consume("_Alignof"))) return primary_6(tok);
+  
+  if ((tok = consume_ident())) {
+    // Function call
+    if (consume("(")) return primary_7(tok);
+    Node *ret = NULL;
+    ret = primary_8(tok);
+    if ( ret != NULL ) return ret;
+    error_tok(tok, "undefined variable");
+  }
+  tok = token;
+
+  if (tok->kind == TK_STR) return primary_9(tok);
+  return primary_final(tok);
+}
+
+
+
+
+
+
+
