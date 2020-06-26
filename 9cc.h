@@ -319,7 +319,7 @@ typedef struct {
 typedef enum {
 	      TYPEDEF = 1 << 0,
 	      STATIC  = 1 << 1,
-	      EXTERN  = 1 << 2,
+	      EXTERN  = 1 << 2
 } StorageClass;
 
 
