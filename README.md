@@ -155,4 +155,9 @@ parse.cの内容を少しづつmini.cに追い出している。関数のstatic�
 
 parse.c内の関数 basetype()および primary()がコケることが判明
 primary()をprimary_[56789]()および primary_final()に分割したら、mini.cに追い出すことが出来た。(何故か)
+basetype()を刻んでmini.cに追い出し中
+basetype_6()直後の if ( *sclass & (*sclass -1))でコケることが判った。
 2020-6-26
+
+parse.cに5行のみ残った。アセンブラレベルで追う予定
+2020-6-27
