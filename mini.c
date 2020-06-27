@@ -1285,7 +1285,7 @@ Node *new_add(Node *lhs, Node *rhs, Token *tok) {
     return new_binary(ND_PTR_ADD, lhs, rhs, tok);
   if (is_integer(lhs->ty) && rhs->ty->base)
     return new_binary(ND_PTR_ADD, rhs, lhs, tok);
-  error_tok(tok, "invalid operands");
+  error_tok(tok, "invalid operands (add)");
   return NULL;
 }
 
@@ -1300,7 +1300,7 @@ Node *new_add(Node *lhs, Node *rhs, Token *tok) {
     return new_binary(ND_PTR_SUB, lhs, rhs, tok);
   if (lhs->ty->base && rhs->ty->base)
     return new_binary(ND_PTR_DIFF, lhs, rhs, tok);
-  error_tok(tok, "invalid operands");
+  error_tok(tok, "invalid operands (sub)");
   return NULL;
 }
 
@@ -2003,8 +2003,15 @@ Type *basetype_9(Token *tok, int counter) {
 
 void basetype_6_5(Token *tok, StorageClass *sclass);
 
+
 void basetype_6_7(Token *tok){
   error_tok(tok, "typedef, static and extern may not be used together");
+}
+
+void basetype_6_5(Token *tok, StorageClass *sclass){
+  int a = *sclass;
+  int b = a - 1;
+  if ( a & b) basetype_6_7(tok);
 }
 
 

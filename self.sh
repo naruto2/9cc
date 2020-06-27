@@ -68,4 +68,5 @@ expand type.c
 expand codegen.c
 expand tokenize.c
 
+
 gcc -static -o 9cc-gen2 $TMP/*.o
